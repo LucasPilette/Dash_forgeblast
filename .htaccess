@@ -4,5 +4,4 @@ Options +FollowSymlinks
 RewriteEngine On
 
 # /accueil -> /controller/home_controller.php
-RewriteRule ^accueil$ /controller/home_controller.php [L]
-
+RewriteRule ^accueil$ controller/home_controller.php [L]

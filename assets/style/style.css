@@ -1,3 +1,241 @@
-h1{
-    color: blueviolet;
+/******************************************* SETUP *******************************************/
+
+
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Author', sans-serif;
+    color: #121b20;
 }
+
+ul {
+    list-style: none;
+}
+
+a{
+    color: inherit;
+    text-decoration: none;
+}
+
+.main {
+    display: flex;
+    flex-direction: row;
+}
+
+a>img{
+    width: 25px;
+    height: 25px;
+    margin-right: 10px;
+}
+
+
+/******************************************* SIDEBAR *******************************************/
+
+.sideBar {
+    background-color: rgb(255, 255, 255);
+    height: 100%;
+    width: 280px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #5f5f5f;
+
+}
+
+.sideBarLogo {
+    padding-left: 20px;
+    transform: scale(1.2);
+    display: flex;
+    justify-content: start;
+    align-items: center;
+}
+
+.sideBarContent > ul{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-left: 15px;
+    margin-top: 4vh;
+}
+
+.sideBarContent> ul> li>a {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 20px;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.sideBarContent> ul> li>a :hover {
+    color: #f39321;
+    font-weight: 700;
+    transition: color 200ms smooth;
+}
+
+
+
+/******************************************* CONTENT *******************************************/
+
+
+
+/* CONTENT */
+.contentDashboard {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.topBar {
+    padding: 18px 0px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    box-shadow:  0 4px 6px -1px #0000001a,0 2px 4px -2px #0000001a;
+    background-color: rgb(255, 255, 255);
+}
+
+.topBarTitle {
+    color: #121b20;
+    font-size: 18px;
+    font-weight: 400;
+    margin-left: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.userData{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-right: 20px;
+}
+
+
+/* GRID CONTENT USER*/
+
+.contentUser {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 20px 15px;
+}
+
+.contentUser > div {
+    background-color: #f0f0f0;
+    width:300px;
+    height: 200px;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px solid #121b20 ;
+    border-radius: 15px;
+    font-size: 18px;
+}
+
+.userAmount{
+    font-size: 50px;
+    font-weight: 600;
+}
+
+.evolution {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: start;
+    gap: 15px;
+}
+
+.evolution span:first-child {
+    padding: 2px 20px;
+    border-radius:15px;
+    background-color: rgba(96, 218, 157, 0.5);
+}
+
+
+/******************************************* CHARTS /*******************************************/
+
+.charts{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 20px 0px;
+}
+
+.registrationChart{
+    width: 65%;
+    height: 600px;
+    background-color: #8b8b8b;
+    border-radius: 8px;
+    margin: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.userActivityChart{
+    width: 35%;
+    height: 600px;
+    background-color: #464646;
+    border-radius: 8px;
+    margin: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/******************************************* RECENT USERS AND SQUADS *******************************************/
+
+.recent{
+    display: flex;
+    flex-direction: column;
+    padding: 20px 15px;
+    gap: 20px;
+}
+
+.recent>div{
+    border: 1px solid #121b20;
+    border-radius: 15px;
+    padding: 20px;
+
+
+}
+
+.recentTitle{
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.recentUsersList >table {
+    width: 100%;
+    border-collapse: collapse;
+    gap: 10px;
+}
+
+.recentUsersList>table>thead{
+
+    font-size: 18px;
+    line-height: 40px;
+    border-radius: 15px;
+    background-color: #f0f0f0;
+}
+
+tbody{
+        border: 1px solid #121b20;
+}
+
+td {
+    padding: 10px;
+    text-align: center;
+
+}
+
+
+
