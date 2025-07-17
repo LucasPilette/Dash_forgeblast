@@ -1,8 +1,7 @@
 <?php
 
 
-$json = file_get_contents('../config/dataSets.json'); // ou ton URL si c'est distant
-$data = json_decode($json, true);
+require_once(dirname(__FILE__) . '/../config/config.php');
 
 
 include(dirname(__FILE__) .'/../view/templates/header.php');
