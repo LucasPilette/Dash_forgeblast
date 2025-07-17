@@ -171,6 +171,35 @@ a > img {
   padding: 20px 0px;
 }
 
+.period-label {
+  font-weight: 600;
+  margin-right: 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+.period-select {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.period-select:hover {
+  border-color: #f39321;
+}
+
+.period-select:focus {
+  border-color: #f39321;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(243, 147, 33, 0.2);
+}
+
 .registrationChart {
   width: 65%;
   background-color: #e9e9e9;
@@ -179,17 +208,64 @@ a > img {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-#userChart {
-  width: 100%;
-  height: 100%;
+.registrationChartHead {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
 }
 
-.userActivityChart {
+.registrationChartHead > button {
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 10px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.registrationChartHead > button:hover {
+  background-color: #f39321;
+  color: rgb(255, 255, 255);
+}
+
+.premiumRepartition {
   width: 35%;
-  background-color: #464646;
+  background-color: rgb(233, 233, 233);
   border-radius: 8px;
   margin: 15px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.premiumRepartitionHead {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+}
+
+.premiumRepartitionHead > h2 {
+  font-size: 18px;
+}
+
+.premiumRepartitionHead > h2 > span {
+  color: #f39321;
+}
+
+.premiumRepartitionHead > button {
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 10px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.premiumRepartitionHead > button:hover {
+  background-color: #f39321;
+  color: rgb(255, 255, 255);
 }
 
 /******************************************* RECENT USERS AND SQUADS *******************************************/

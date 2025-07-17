@@ -1,4 +1,5 @@
 let checkPremium = document.querySelectorAll(".userPremium");
+let dataPremium = [];
 
 checkPremium.forEach((user) => {
   if (user) {
@@ -15,6 +16,8 @@ let currentInterval = "all";
 let isCumulative = false; // mode par défaut = non cumulatif
 document.getElementById("toggleCumulative").textContent =
   "Activer le mode cumulatif";
+let billingChart; // instance du graphique premium
+let isBillingMode = false;
 
 // Fonction pour calculer les données cumulatives
 function computeCumulative(data) {
@@ -31,6 +34,25 @@ function computeCumulative(data) {
       android: cumulativeAndroid,
     };
   });
+}
+
+// Fonction pour obtenir le titre dynamique en fonction de l'intervalle
+function getDynamicTitle() {
+  const labels = {
+    "1d": "aujourd’hui",
+    "7d": "7 derniers jours",
+    "1m": "dernier mois",
+    "3m": "3 derniers mois",
+    "6m": "6 derniers mois",
+    "1y": "depuis 1 an",
+    all: "sur toute la période",
+  };
+
+  const base = isCumulative
+    ? "Utilisateurs iOS / Android cumulés"
+    : "Utilisateurs iOS / Android";
+
+  return `${base} (${labels[currentInterval] || "période inconnue"})`;
 }
 
 // Fonction pour dessiner ou mettre à jour le graphique
@@ -93,7 +115,7 @@ function renderChart(data) {
       plugins: {
         title: {
           display: true,
-          text: "Utilisateurs iOS / Android + Total",
+          text: getDynamicTitle(),
         },
       },
       scales: {
@@ -285,11 +307,108 @@ fetch("../config/registrationData.json")
   })
   .then((data) => {
     fullData = data;
-    renderChart(fullData); // affichage initial (tout)
+    renderChart(fullData);
+    // affichage initial (tout)
   })
   .catch((error) => {
     console.error("Erreur de chargement :", error);
   });
+
+// Chargement initial depuis le fichier JSON
+fetch("../config/userGenerator.php")
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error("Erreur lors du chargement du JSON");
+    }
+    return response.json();
+  })
+  .then((data) => {
+    console.log("Données utilisateur chargées :", data);
+    dataPremium = data;
+    renderPremiumChart(dataPremium);
+    // Extraire le nombre de premium / non-premium
+  })
+  .catch((error) => {
+    console.error("Erreur de chargement :", error);
+  });
+
+function renderPremiumChart(userData) {
+  let chartData;
+  let chartLabels;
+  let total;
+  const pieCanvas = document.getElementById("premiumChart");
+  if (!pieCanvas) return; // sécurise contre une erreur si canvas absent
+
+  if (isBillingMode) {
+    // Mode filtré : billing dans les "premium only"
+    const premiumUsers = userData.filter((user) => user.premium === "yes");
+    const monthly = premiumUsers.filter(
+      (user) => user.billing === "monthly"
+    ).length;
+    const yearly = premiumUsers.filter(
+      (user) => user.billing === "yearly"
+    ).length;
+    total = monthly + yearly;
+
+    chartData = [monthly, yearly];
+    chartLabels = ["Mensuel", "Annuel"];
+  } else {
+    // Mode par défaut : premium vs gratuit
+    const premium = userData.filter((user) => user.premium === "yes").length;
+    const nonPremium = userData.filter((user) => user.premium === "no").length;
+    total = premium + nonPremium;
+
+    chartData = [premium, nonPremium];
+    chartLabels = ["Premium", "Gratuit"];
+  }
+
+  const pieData = {
+    labels: chartLabels,
+    datasets: [
+      {
+        data: chartData,
+        backgroundColor: ["#f39321", "#cccccc"],
+        borderColor: ["#ffffff", "#ffffff"],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const pieCtx = document.getElementById("premiumChart").getContext("2d");
+
+  // Supprimer l'ancien si existant
+  if (billingChart) {
+    billingChart.destroy();
+  }
+
+  billingChart = new Chart(pieCtx, {
+    type: "pie",
+    data: pieData,
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: isBillingMode
+            ? "Premium : Répartition Mensuel vs Annuel"
+            : "Utilisateurs Premium vs Gratuit",
+        },
+        legend: {
+          position: "bottom",
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const value = context.parsed;
+              const percent = ((value / total) * 100).toFixed(1);
+              return `${context.label}: ${value} (${percent}%)`;
+            },
+          },
+        },
+      },
+    },
+  });
+}
 
 // Gestion du menu déroulant
 document.getElementById("periodSelect").addEventListener("change", (e) => {
@@ -313,4 +432,16 @@ toggleButton.addEventListener("click", () => {
   // rafraîchir le graphique avec les données courantes
   const filtered = filterDataByPeriod(currentInterval);
   renderChart(filtered);
+});
+
+const billingToggle = document.getElementById("toggleBillingMode");
+
+billingToggle.addEventListener("click", () => {
+  isBillingMode = !isBillingMode;
+
+  billingToggle.textContent = isBillingMode
+    ? "Afficher Premium vs Gratuit"
+    : "Afficher par facturation (premium)";
+
+  renderPremiumChart(dataPremium);
 });
