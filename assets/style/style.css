@@ -155,11 +155,39 @@ a > img {
   justify-content: start;
   gap: 15px;
 }
-
+/* 
 .evolution span:first-child {
   padding: 2px 20px;
   border-radius: 15px;
   background-color: rgba(96, 218, 157, 0.5);
+} */
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: bold;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+}
+
+.badge-positive {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.badge-negative {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.badge-neutral {
+  background-color: #e2e3e5;
+  color: #383d41;
+  border: 1px solid #d6d8db;
 }
 
 /******************************************* CHARTS /*******************************************/

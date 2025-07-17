@@ -326,7 +326,25 @@ fetch("../config/userGenerator.php")
     console.log("Données utilisateur chargées :", data);
     dataPremium = data;
     renderPremiumChart(dataPremium);
-    // Extraire le nombre de premium / non-premium
+
+    const totalUsers = getTotalUsers(dataPremium);
+    document.getElementById("userCount").textContent = totalUsers;
+
+    const stats = getUserStatsByMonth(dataPremium);
+
+    const variation = stats.variation;
+
+    const badge = document.getElementById("userGrowthBadge");
+    badge.textContent = `${variation > 0 ? "+" : ""}${variation}%`;
+
+    badge.classList.remove("badge-positive", "badge-negative", "badge-neutral");
+    if (variation > 0) {
+      badge.classList.add("badge", "badge-positive");
+    } else if (variation < 0) {
+      badge.classList.add("badge", "badge-negative");
+    } else {
+      badge.classList.add("badge", "badge-neutral");
+    }
   })
   .catch((error) => {
     console.error("Erreur de chargement :", error);
@@ -445,3 +463,56 @@ billingToggle.addEventListener("click", () => {
 
   renderPremiumChart(dataPremium);
 });
+
+//
+function getTotalUsers(users) {
+  return users.length;
+}
+
+// Fonction pour obtenir les statistiques des utilisateurs par mois
+function getUserStatsByMonth(users) {
+  const now = new Date();
+  const currentMonth = now.getMonth(); // 0–11
+  const currentYear = now.getFullYear();
+
+  const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+  let totalNow = 0;
+  let totalBefore = 0;
+
+  users.forEach((user) => {
+    const [yearStr, monthStr] = user.join_date.split("-");
+    const userYear = parseInt(yearStr);
+    const userMonth = parseInt(monthStr) - 1;
+
+    // Si l'utilisateur est arrivé ce mois-ci ou avant
+    if (
+      userYear < currentYear ||
+      (userYear === currentYear && userMonth <= currentMonth)
+    ) {
+      totalNow++;
+    }
+
+    // S'il est arrivé le mois précédent ou avant
+    if (
+      userYear < lastMonthYear ||
+      (userYear === lastMonthYear && userMonth <= lastMonth)
+    ) {
+      totalBefore++;
+    }
+  });
+
+  const variation =
+    totalBefore === 0
+      ? totalNow > 0
+        ? 100
+        : 0
+      : (((totalNow - totalBefore) / totalBefore) * 100).toFixed(1);
+
+  return {
+    currentCount: totalNow,
+    previousCount: totalBefore,
+    variation: parseFloat(variation),
+  };
+}

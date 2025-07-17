@@ -31,10 +31,10 @@
                         <h3>Total Users</h3>
                     </div>
                     <div class="userAmount">
-                        <p>150</p>
+                        <p id="userCount">150</p>
                     </div>
                     <div class="evolution">
-                        <span>+27%</span>
+                        <span id="userGrowthBadge" class="badge"></span>
                         <p>Last month</p>
                     </div>
                 </div>
