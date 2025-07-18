@@ -27,7 +27,8 @@ function generate_users($count = 40) {
 
     for ($i = 0; $i < $count; $i++) {
         $name = $first_names[$i % count($first_names)];
-        $premium = rand(0, 1) === 1 ? "yes" : "no";
+        $premium = rand(0, 3) === 1 ? "yes" : "no";
+        $os = rand(0, 1) === 1 ? "android" : "ios";
 
         $user = [
             "user_name" => $name,
@@ -37,7 +38,8 @@ function generate_users($count = 40) {
             "join_date" => random_date_within_last_year(),
             "balance" => round(rand(4000, 50000) / 100, 2),
             "status" => $statuses[array_rand($statuses)],
-            "premium" => $premium
+            "premium" => $premium,
+            "os" => $os,
         ];
 
         if ($premium === "yes") {

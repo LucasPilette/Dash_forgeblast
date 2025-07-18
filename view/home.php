@@ -31,7 +31,7 @@
                         <h3>Total Users</h3>
                     </div>
                     <div class="userAmount">
-                        <p id="userCount">150</p>
+                        <p id="userCount"></p>
                     </div>
                     <div class="evolution">
                         <span id="userGrowthBadge" class="badge"></span>
@@ -40,10 +40,10 @@
                 </div>
                 <div class="contentUserItem">
                     <div class="itemTitle">
-                        <h3>Total Users</h3>
+                        <h3>New Users this month</h3>
                     </div>
                     <div class="userAmount">
-                        <p>150</p>
+                        <p id="newUsersCount"></p>
                     </div>
                     <div class="evolution">
                         <span>+27%</span>
@@ -95,7 +95,6 @@
                             <h2>Période</h2>
                         </label>
                         <select id="periodSelect" class="period-select">
-                            <option value="all">Tout</option>
                             <option value="1d">Dernier jour</option>
                             <option value="7d">7 derniers jours</option>
                             <option value="1m">Dernier mois</option>
@@ -119,6 +118,10 @@
                 <div class="recentUsers">
                     <div class="recentTitle">Recent New User</div>
                     <div class="recentUsersList">
+                        <div class="search-bar-container" style="text-align:right; margin-bottom:10px;">
+                            <input type="text" id="userSearchInput" placeholder="Search"
+                                style="padding:6px; min-width:220px;">
+                        </div>
                         <table>
                             <thead>
                                 <tr>
@@ -132,25 +135,19 @@
 
                                 </tr>
                             </thead>
-                            <tbody>
-                                <?php foreach ($userData as $user): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($user['user_name']) ?></td>
-                                    <td><?= htmlspecialchars($user['user_id']) ?></td>
-                                    <td><?= htmlspecialchars($user['blast_id']) ?></td>
-                                    <td><?= htmlspecialchars($user['email']) ?></td>
-                                    <td><?= htmlspecialchars($user['status']) ?></td>
-                                    <td class="userPremium"><?= htmlspecialchars($user['premium']) ?></td>
-                                    <td><?= isset($user['billing']) ? htmlspecialchars($user['billing']) : "/" ; ?></td>
-                                </tr>
-                                <?php endforeach; ?>
+                            <!-- the table is generated trough a js loop -->
+                            <tbody class="userRow">
                             </tbody>
                         </table>
                     </div>
                 </div>
                 <div class="recentSquads">
                     <div class="recentTitle">Recent New Squad</div>
-                    <div class="recentSquadsList">
+                    <div class="recentSquadsList squadTableContainer">
+                        <div class="search-bar-container" style="text-align:right; margin-bottom:10px;">
+                            <input type="text" id="squadSearchInput" placeholder="Search"
+                                style="padding:6px; min-width:220px;">
+                        </div>
                         <table>
                             <thead>
                                 <tr>
@@ -164,18 +161,9 @@
 
                                 </tr>
                             </thead>
-                            <tbody>
-                                <?php foreach ($squadData as $squad): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($squad['squad_name']) ?></td>
-                                    <td><?= htmlspecialchars($squad['squad_id']) ?></td>
-                                    <td><?= htmlspecialchars($squad['game']) ?></td>
-                                    <td><?= htmlspecialchars($squad['leader']) ?></td>
-                                    <td><?= htmlspecialchars($squad['members']) ?></td>
-                                    <td><?= htmlspecialchars($squad['created_date']) ?></td>
-                                    <td><?= htmlspecialchars($squad['status']) ?></td>
-                                </tr>
-                                <?php endforeach; ?>
+                            <!-- the table is generated trough a js loop -->
+                            <tbody class="squadRow">
+
                             </tbody>
                         </table>
                     </div>

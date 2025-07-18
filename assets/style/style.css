@@ -332,6 +332,52 @@ a > img {
   background-color: #f0f0f0;
 }
 
+#prevPage,
+#nextPage {
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 10px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#prevPage:hover,
+#nextPage:hover {
+  background-color: #f39321;
+  color: rgb(255, 255, 255);
+}
+
+#prevPageSquad,
+#nextPageSquad {
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 10px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#prevPageSquad:hover,
+#nextPageSquad:hover {
+  background-color: #f39321;
+  color: rgb(255, 255, 255);
+}
+
+.paginationSpan {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 10px;
+}
+
+.pagination-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+}
+
 tbody {
   border: 1px solid #121b20;
 }
