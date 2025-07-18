@@ -33,9 +33,9 @@
                     <div class="userAmount">
                         <p id="userCount"></p>
                     </div>
-                    <div class="evolution">
-                        <span id="userGrowthBadge" class="badge"></span>
-                        <p>Last month</p>
+                    <div class="badge-wrapper">
+                        <div id="userGrowthBadge" class="badge badge-neutral">0%</div>
+                        <div id="userGrowthTooltip" class="tooltip"></div>
                     </div>
                 </div>
                 <div class="contentUserItem">
@@ -45,33 +45,9 @@
                     <div class="userAmount">
                         <p id="newUsersCount"></p>
                     </div>
-                    <div class="evolution">
-                        <span>+27%</span>
-                        <p>Last month</p>
-                    </div>
-                </div>
-                <div class="contentUserItem">
-                    <div class="itemTitle">
-                        <h3>Total Users</h3>
-                    </div>
-                    <div class="userAmount">
-                        <p>150</p>
-                    </div>
-                    <div class="evolution">
-                        <span>+27%</span>
-                        <p>Last month</p>
-                    </div>
-                </div>
-                <div class="contentUserItem">
-                    <div class="itemTitle">
-                        <h3>Total Users</h3>
-                    </div>
-                    <div class="userAmount">
-                        <p>150</p>
-                    </div>
-                    <div class="evolution">
-                        <span>+27%</span>
-                        <p>Last month</p>
+                    <div class="badge-wrapper">
+                        <div id="userGrowthTrendBadge" class="badge badge-neutral">+0%</div>
+                        <div id="userGrowthTrendTooltip" class="tooltip"></div>
                     </div>
                 </div>
                 <div class="contentUserItem">

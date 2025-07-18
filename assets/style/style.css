@@ -123,7 +123,7 @@ a > img {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: start;
   gap: 32px;
   padding: 20px 15px;
 }
@@ -188,6 +188,34 @@ a > img {
   background-color: #e2e3e5;
   color: #383d41;
   border: 1px solid #d6d8db;
+}
+
+.badge-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip {
+  visibility: hidden;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 6px 10px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%; /* Position au-dessus */
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.badge-wrapper:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
 }
 
 /******************************************* CHARTS /*******************************************/

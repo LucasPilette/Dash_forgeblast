@@ -371,27 +371,93 @@ function initUserTable(data) {
 
 function updateUserCounters(users) {
   const now = new Date();
+
+  // Périodes
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(now.getDate() - 30);
 
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(now.getDate() - 60);
+
+  // Nouveaux utilisateurs sur les 30 derniers jours
   const count30 = users.filter((user) => {
     const date = new Date(user.join_date);
     return date >= thirtyDaysAgo && date <= now;
   }).length;
-  const badge = document.getElementById("userGrowthBadge");
+
+  // Nouveaux utilisateurs entre -60 et -30 jours
+  const countPrevious30 = users.filter((user) => {
+    const date = new Date(user.join_date);
+    return date >= sixtyDaysAgo && date < thirtyDaysAgo;
+  }).length;
+
+  //  Total utilisateurs
   const countAll = users.length;
+
+  // Variation sur 30 jours glissants
+  let trendVariation = 0;
+  if (countPrevious30 === 0) {
+    trendVariation = count30 > 0 ? 100 : 0;
+  } else {
+    trendVariation = (
+      ((count30 - countPrevious30) / countPrevious30) *
+      100
+    ).toFixed(1);
+  }
+
+  // Variation mensuelle (déjà existante)
   const stats = getUserStatsByMonth(users);
 
+  // Mise à jour du DOM
   document.getElementById("userCount").textContent = countAll;
   document.getElementById("newUsersCount").textContent = count30;
-  badge.textContent = `${stats.variation > 0 ? "+" : ""}${stats.variation}%`;
-  badge.className = `badge ${
+
+  const growthBadge = document.getElementById("userGrowthBadge");
+  growthBadge.textContent = `${stats.variation > 0 ? "+" : ""}${
+    stats.variation
+  }%`;
+  growthBadge.className = `badge ${
     stats.variation > 0
       ? "badge-positive"
       : stats.variation < 0
       ? "badge-negative"
       : "badge-neutral"
   }`;
+
+  // Badge de tendance glissante 30 jours
+  const trendBadge = document.getElementById("userGrowthTrendBadge");
+  if (trendBadge) {
+    trendBadge.textContent = `${
+      trendVariation > 0 ? "+" : ""
+    }${trendVariation}%`;
+    trendBadge.classList.remove(
+      "badge-positive",
+      "badge-negative",
+      "badge-neutral"
+    );
+    trendBadge.classList.add(
+      trendVariation > 0
+        ? "badge-positive"
+        : trendVariation < 0
+        ? "badge-negative"
+        : "badge-neutral"
+    );
+  }
+
+  const tooltip = document.getElementById("userGrowthTrendTooltip");
+  if (tooltip) {
+    tooltip.textContent = `One month prior : ${countPrevious30} users${
+      countPrevious30 !== 1 ? "s" : ""
+    }`;
+  }
+  const userGrowthTooltip = document.getElementById("userGrowthTooltip");
+  if (userGrowthTooltip) {
+    const diff = stats.currentCount - stats.previousCount;
+    const variationText = `${diff > 0 ? "+" : ""}${diff} user${
+      Math.abs(diff) !== 1 ? "s" : ""
+    }`;
+    userGrowthTooltip.textContent = `Last month : ${variationText}`;
+  }
 }
 
 function getUserStatsByMonth(users) {
