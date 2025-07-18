@@ -94,10 +94,23 @@
                 <div class="recentUsers">
                     <div class="recentTitle">Recent New User</div>
                     <div class="recentUsersList">
-                        <div class="search-bar-container" style="text-align:right; margin-bottom:10px;">
-                            <input type="text" id="userSearchInput" placeholder="Search"
-                                style="padding:6px; min-width:220px;">
+                        <div class="userListHead">
+                            <div>
+                                <label class="filterCheckbox">
+                                    <input type="checkbox" id="filterPremium" checked />
+                                    Premium
+                                </label>
+                                <label class="filterCheckbox">
+                                    <input type="checkbox" id="filterFree" checked />
+                                    Gratuit
+                                </label>
+                            </div>
+                            <div class="search-bar-container" style="text-align:right; margin-bottom:10px;">
+                                <input type="text" id="userSearchInput" placeholder="Search"
+                                    style="padding:6px; min-width:220px;">
+                            </div>
                         </div>
+
                         <table>
                             <thead>
                                 <tr>

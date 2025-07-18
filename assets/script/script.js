@@ -347,22 +347,43 @@ function initUserTable(data) {
   }
 
   if (searchInput) {
-    searchInput.addEventListener("input", () => {
+    // Ajout des filtres premium/free
+    const filterPremium = document.getElementById("filterPremium");
+    const filterFree = document.getElementById("filterFree");
+
+    function applyFilters() {
       const query = searchInput.value.trim().toLowerCase();
-      filtered = data.filter(
-        (u) =>
+      filtered = data.filter((u) => {
+        // Filtre texte
+        const matchesText =
           u.user_name?.toLowerCase().includes(query) ||
           u.blast_id?.toLowerCase().includes(query) ||
-          u.email?.toLowerCase().includes(query)
-      );
+          u.email?.toLowerCase().includes(query);
+
+        // Filtre premium/free
+        const isPremium = u.premium === "yes";
+        const isFree = u.premium === "no";
+        const showPremium = filterPremium?.checked;
+        const showFree = filterFree?.checked;
+
+        const matchesPremium =
+          (isPremium && showPremium) || (isFree && showFree);
+
+        return matchesText && matchesPremium;
+      });
       currentPage = 1;
       renderPage(currentPage);
       updatePagination();
-    });
-  }
+    }
 
-  renderPage(currentPage);
-  updatePagination();
+    searchInput.addEventListener("input", applyFilters);
+    filterPremium?.addEventListener("change", applyFilters);
+    filterFree?.addEventListener("change", applyFilters);
+    applyFilters();
+  } else {
+    renderPage(currentPage);
+    updatePagination();
+  }
 }
 
 // ==========================

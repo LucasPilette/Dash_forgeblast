@@ -345,6 +345,44 @@ a > img {
   margin-bottom: 10px;
 }
 
+.filterCheckbox {
+  accent-color: #f39321;
+  padding: 10px;
+  display: flex;
+}
+#filterPremium,
+#filterFree {
+  margin-right: 12px;
+}
+
+.filterCheckbox input {
+  background: #f39321;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 30px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(243, 147, 33, 0.08);
+  width: 20px;
+  height: 20px;
+}
+
+.userListHead {
+  padding: 15px 0px;
+  gap: 30px;
+  display: flex;
+  justify-content: flex-end;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.userListHead > div {
+  display: flex;
+  align-items: center;
+}
+
 .recentUsersList > table,
 .recentSquadsList > table {
   width: 100%;
