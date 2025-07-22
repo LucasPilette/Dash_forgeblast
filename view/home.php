@@ -1,20 +1,4 @@
 <div class="main">
-
-    <div class="sideBar">
-        <div class="sideBarLogo">
-            <img src="../assets/src/logoDashboard.svg" alt="ForgeBlast Logo">
-        </div>
-        <div class="sideBarContent">
-            <ul>
-                <li><a href="/accueil"><img src="../assets/src/dashSVG.svg" alt=""><span>Dashboard</span></a></li>
-                <li><a href="/play"><img src="../assets/src/controllerSVG.svg" alt=""><span>Play Management</span></a>
-                </li>
-                <li><a href="/game"><img src="../assets/src/gameSVG.svg" alt=""><span>Game Management</span></a></li>
-                <li><a href="/user"><img src="../assets/src/headphoneSVG.svg" alt=""><span>User Support</span></a></li>
-                <li><a href="/setting"><img src="../assets/src/settingSVG.svg" alt=""><span>Setting</span></a></li>
-            </ul>
-        </div>
-    </div>
     <div class="contentDashboard">
         <div class="topBar">
             <div class="topBarTitle">
@@ -48,18 +32,6 @@
                     <div class="badge-wrapper">
                         <div id="userGrowthTrendBadge" class="badge badge-neutral">+0%</div>
                         <div id="userGrowthTrendTooltip" class="tooltip"></div>
-                    </div>
-                </div>
-                <div class="contentUserItem">
-                    <div class="itemTitle">
-                        <h3>Revenues</h3>
-                    </div>
-                    <div class="userAmount">
-                        <p>150</p>
-                    </div>
-                    <div class="evolution">
-                        <span>+27%</span>
-                        <p>Last month</p>
                     </div>
                 </div>
             </div>

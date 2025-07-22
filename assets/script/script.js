@@ -23,6 +23,9 @@ let isCumulative = true;
 let billingChart = null;
 let isBillingMode = false;
 let chart = null;
+let revenueChart = null;
+let isRevenueCumulative = true; // Ajoute cette variable
+let revenueRawData = []; // Stocke les données brutes
 
 // ==========================
 // FONCTIONS UTILITAIRES
@@ -38,6 +41,18 @@ function computeCumulative(data) {
     }));
 }
 
+function computeRevenueCumulative(data) {
+    let monthly = 0,
+        yearly = 0,
+        total = 0;
+    return data.map((item) => ({
+        date: item.date,
+        monthly: (monthly += item.monthly),
+        yearly: (yearly += item.yearly),
+        total: (total += item.total),
+    }));
+}
+
 function getDynamicTitle() {
     const labels = {
         "1d": "aujourd’hui",
@@ -50,6 +65,21 @@ function getDynamicTitle() {
     const base = isCumulative
         ? "Utilisateurs iOS / Android cumulés"
         : "Utilisateurs iOS / Android";
+    return `${base} (${labels[currentInterval] || "période inconnue"})`;
+}
+
+function getRevenueDynamicTitle() {
+    const labels = {
+        "1d": "aujourd’hui",
+        "7d": "7 derniers jours",
+        "1m": "dernier mois",
+        "3m": "3 derniers mois",
+        "6m": "6 derniers mois",
+        "1y": "depuis 1 an",
+    };
+    const base = isRevenueCumulative
+        ? "Revenus cumulés "
+        : "Revenus ";
     return `${base} (${labels[currentInterval] || "période inconnue"})`;
 }
 
@@ -170,6 +200,16 @@ function fetchAndInit() {
             renderPremiumChart(usersData);
             updateUserCounters(usersData);
             initUserTable(usersData);
+        })
+        .catch((err) => console.error(err));
+}
+
+function fetchAndInitRevenue() {
+    fetch("../config/salesGenerator.php")
+        .then((res) => res.ok ? res.json() : Promise.reject("Erreur fetch revenus"))
+        .then((data) => {
+            revenueRawData = data; // Stocke les données une fois
+            prepareRevenueChart(revenueRawData);
         })
         .catch((err) => console.error(err));
 }
@@ -663,3 +703,122 @@ function initSquadTable(squads) {
 // ==========================
 fetchAndInit();
 fetchAndInitSquads();
+
+if (document.getElementById("revenueChart")) {
+    fetchAndInitRevenue();
+    document.getElementById("periodSelect")?.addEventListener("change", (e) => {
+        currentInterval = e.target.value;
+        fetchAndInitRevenue();
+    });
+}
+
+function prepareRevenueChart(revenueData) {
+    // Regroupe par date (jour/mois/année selon la période)
+    const start = getStartDateFromPeriod(currentInterval);
+    const end = new Date();
+    let grouped = {};
+
+    if (["1d", "7d", "1m"].includes(currentInterval)) {
+        // Par jour
+        revenueData.forEach(({ billing_date, billing_type, amount }) => {
+            if (!grouped[billing_date]) {
+                grouped[billing_date] = { date: billing_date, monthly: 0, yearly: 0, total: 0 };
+            }
+            grouped[billing_date][billing_type] += amount;
+            grouped[billing_date].total += amount;
+        });
+        // Remplir les dates manquantes
+        const range = generateDateRange(start, end);
+        var chartData = range.map(date => grouped[date] || { date, monthly: 0, yearly: 0, total: 0 });
+    } else {
+        // Par mois
+        revenueData.forEach(({ billing_date, billing_type, amount }) => {
+            const d = new Date(billing_date);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+            if (!grouped[key]) {
+                grouped[key] = { date: key, monthly: 0, yearly: 0, total: 0 };
+            }
+            grouped[key][billing_type] += amount;
+            grouped[key].total += amount;
+        });
+        const range = generateMonthRange(start, end);
+        var chartData = range.map(month => grouped[month] || { date: month, monthly: 0, yearly: 0, total: 0 });
+    }
+
+    // Ajoute le cumulatif si activé
+    const preparedData = isRevenueCumulative ? computeRevenueCumulative(chartData) : chartData;
+
+    renderRevenueChart(preparedData);
+}
+
+function renderRevenueChart(data) {
+    const ctx = document.getElementById("revenueChart")?.getContext("2d");
+    if (!ctx) return;
+    if (revenueChart) revenueChart.destroy();
+
+    revenueChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: data.map(d => d.date),
+            datasets: [
+                {
+                    label: "Mensuel",
+                    data: data.map(d => d.monthly),
+                    borderColor: "#f39321",
+                    backgroundColor: "rgba(243,147,33,0.2)",
+                    fill: true,
+                },
+                {
+                    label: "Annuel",
+                    data: data.map(d => d.yearly),
+                    borderColor: "#d87b0c",
+                    backgroundColor: "rgba(216,123,12,0.2)",
+                    fill: true,
+                },
+                {
+                    label: "Total",
+                    data: data.map(d => d.total),
+                    borderColor: "#000000",
+                    fill: false,
+                    pointRadius: 3,
+                    datalabels: {
+                        align: 'top',
+                        anchor: 'end',
+                        formatter: function(value) {
+                            return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+                        },
+                        color: '#000',
+                        font: { weight: 'bold' }
+                    }
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: getRevenueDynamicTitle() },
+                datalabels: {
+                    display: function(context) {
+                        return context.dataset.label === "Total";
+                    }
+                }
+            },
+            scales: {
+                x: { title: { display: true, text: "Date" } },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: "Montant (€)" },
+                },
+            },
+        },
+        plugins: [ChartDataLabels],
+    });
+}
+
+document.getElementById("toggleCumulative")?.addEventListener("click", () => {
+    isRevenueCumulative = !isRevenueCumulative;
+    document.getElementById("toggleCumulative").textContent = isRevenueCumulative
+        ? "Désactiver le mode cumulatif"
+        : "Activer le mode cumulatif";
+    prepareRevenueChart(revenueRawData); // Utilise les données déjà chargées
+});

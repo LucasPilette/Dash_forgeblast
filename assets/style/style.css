@@ -83,7 +83,7 @@ a > img {
 
 /* CONTENT */
 
-.contentDashboard {
+.contentDashboard, .contentSales {
   margin-left: 280px;
   display: flex;
   flex-direction: column;
