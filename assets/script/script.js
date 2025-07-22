@@ -77,9 +77,7 @@ function getRevenueDynamicTitle() {
         "6m": "6 derniers mois",
         "1y": "depuis 1 an",
     };
-    const base = isRevenueCumulative
-        ? "Revenus cumulés "
-        : "Revenus ";
+    const base = isRevenueCumulative ? "Revenus cumulés " : "Revenus ";
     return `${base} (${labels[currentInterval] || "période inconnue"})`;
 }
 
@@ -182,6 +180,15 @@ function filterDataByPeriod(period) {
     }
 }
 
+function filterRevenueByPeriod(data, period) {
+    const start = getStartDateFromPeriod(period);
+    const end = new Date();
+    return data.filter(({ billing_date }) => {
+        const d = new Date(billing_date);
+        return d >= start && d <= end;
+    });
+}
+
 // ==========================
 // CHARGEMENT PRINCIPAL
 // ==========================
@@ -206,7 +213,9 @@ function fetchAndInit() {
 
 function fetchAndInitRevenue() {
     fetch("../config/salesGenerator.php")
-        .then((res) => res.ok ? res.json() : Promise.reject("Erreur fetch revenus"))
+        .then((res) =>
+            res.ok ? res.json() : Promise.reject("Erreur fetch revenus")
+        )
         .then((data) => {
             revenueRawData = data; // Stocke les données une fois
             prepareRevenueChart(revenueRawData);
@@ -722,19 +731,29 @@ function prepareRevenueChart(revenueData) {
         // Par jour
         revenueData.forEach(({ billing_date, billing_type, amount }) => {
             if (!grouped[billing_date]) {
-                grouped[billing_date] = { date: billing_date, monthly: 0, yearly: 0, total: 0 };
+                grouped[billing_date] = {
+                    date: billing_date,
+                    monthly: 0,
+                    yearly: 0,
+                    total: 0,
+                };
             }
             grouped[billing_date][billing_type] += amount;
             grouped[billing_date].total += amount;
         });
         // Remplir les dates manquantes
         const range = generateDateRange(start, end);
-        var chartData = range.map(date => grouped[date] || { date, monthly: 0, yearly: 0, total: 0 });
+        var chartData = range.map(
+            (date) => grouped[date] || { date, monthly: 0, yearly: 0, total: 0 }
+        );
     } else {
         // Par mois
         revenueData.forEach(({ billing_date, billing_type, amount }) => {
             const d = new Date(billing_date);
-            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+                2,
+                "0"
+            )}`;
             if (!grouped[key]) {
                 grouped[key] = { date: key, monthly: 0, yearly: 0, total: 0 };
             }
@@ -742,11 +761,21 @@ function prepareRevenueChart(revenueData) {
             grouped[key].total += amount;
         });
         const range = generateMonthRange(start, end);
-        var chartData = range.map(month => grouped[month] || { date: month, monthly: 0, yearly: 0, total: 0 });
+        var chartData = range.map(
+            (month) =>
+                grouped[month] || {
+                    date: month,
+                    monthly: 0,
+                    yearly: 0,
+                    total: 0,
+                }
+        );
     }
 
     // Ajoute le cumulatif si activé
-    const preparedData = isRevenueCumulative ? computeRevenueCumulative(chartData) : chartData;
+    const preparedData = isRevenueCumulative
+        ? computeRevenueCumulative(chartData)
+        : chartData;
 
     renderRevenueChart(preparedData);
 }
@@ -759,37 +788,40 @@ function renderRevenueChart(data) {
     revenueChart = new Chart(ctx, {
         type: "line",
         data: {
-            labels: data.map(d => d.date),
+            labels: data.map((d) => d.date),
             datasets: [
                 {
                     label: "Mensuel",
-                    data: data.map(d => d.monthly),
+                    data: data.map((d) => d.monthly),
                     borderColor: "#f39321",
                     backgroundColor: "rgba(243,147,33,0.2)",
                     fill: true,
                 },
                 {
                     label: "Annuel",
-                    data: data.map(d => d.yearly),
+                    data: data.map((d) => d.yearly),
                     borderColor: "#d87b0c",
                     backgroundColor: "rgba(216,123,12,0.2)",
                     fill: true,
                 },
                 {
                     label: "Total",
-                    data: data.map(d => d.total),
+                    data: data.map((d) => d.total),
                     borderColor: "#000000",
                     fill: false,
                     pointRadius: 3,
                     datalabels: {
-                        align: 'top',
-                        anchor: 'end',
-                        formatter: function(value) {
-                            return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+                        align: "top",
+                        anchor: "end",
+                        formatter: function (value) {
+                            return value.toLocaleString("fr-FR", {
+                                style: "currency",
+                                currency: "EUR",
+                            });
                         },
-                        color: '#000',
-                        font: { weight: 'bold' }
-                    }
+                        color: "#000",
+                        font: { weight: "bold" },
+                    },
                 },
             ],
         },
@@ -798,10 +830,17 @@ function renderRevenueChart(data) {
             plugins: {
                 title: { display: true, text: getRevenueDynamicTitle() },
                 datalabels: {
-                    display: function(context) {
-                        return context.dataset.label === "Total";
-                    }
-                }
+                    display: function (context) {
+                        // Affiche seulement pour la série "Total"
+                        if (context.dataset.label !== "Total") return false;
+                        const index = context.dataIndex;
+                        const value = context.dataset.data[index];
+                        // Affiche si premier point ou valeur différente du précédent
+                        if (index === 0) return true;
+                        const prevValue = context.dataset.data[index - 1];
+                        return value !== prevValue;
+                    },
+                },
             },
             scales: {
                 x: { title: { display: true, text: "Date" } },
@@ -817,8 +856,96 @@ function renderRevenueChart(data) {
 
 document.getElementById("toggleCumulative")?.addEventListener("click", () => {
     isRevenueCumulative = !isRevenueCumulative;
-    document.getElementById("toggleCumulative").textContent = isRevenueCumulative
-        ? "Désactiver le mode cumulatif"
-        : "Activer le mode cumulatif";
+    document.getElementById("toggleCumulative").textContent =
+        isRevenueCumulative
+            ? "Désactiver le mode cumulatif"
+            : "Activer le mode cumulatif";
     prepareRevenueChart(revenueRawData); // Utilise les données déjà chargées
 });
+
+if (document.getElementById("premiumChart") && document.getElementById("revenueChart")) {
+    let isBillingModeSales = false;
+
+    function renderPremiumChartSales(data) {
+        const canvas = document.getElementById("premiumChart");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (billingChart) billingChart.destroy();
+
+        let labels, chartData, chartTitle;
+        if (isBillingModeSales) {
+            // Répartition en nombre de billing
+            const monthlyCount = data.filter((u) => u.billing_type === "monthly").length;
+            const yearlyCount = data.filter((u) => u.billing_type === "yearly").length;
+            labels = ["Mensuel", "Annuel"];
+            chartData = [monthlyCount, yearlyCount];
+            chartTitle = "Répartition des facturations (nombre)";
+        } else {
+            // Répartition des revenus en euros
+            const monthlyRevenue = data
+                .filter((u) => u.billing_type === "monthly")
+                .reduce((sum, u) => sum + (parseFloat(u.amount) || 0), 0);
+            const yearlyRevenue = data
+                .filter((u) => u.billing_type === "yearly")
+                .reduce((sum, u) => sum + (parseFloat(u.amount) || 0), 0);
+            labels = ["Mensuel (€)", "Annuel (€)"];
+            chartData = [monthlyRevenue, yearlyRevenue];
+            chartTitle = "Répartition des revenus (€)";
+        }
+
+        billingChart = new Chart(ctx, {
+            type: "pie",
+            data: {
+                labels: labels,
+                datasets: [
+                    { data: chartData, backgroundColor: ["#f39321", "#d87b0c"] },
+                ],
+            },
+            options: {
+                plugins: {
+                    title: { display: true, text: chartTitle },
+                    legend: { position: "bottom" },
+                    datalabels: {
+                        formatter: function(value, context) {
+                            if (!isBillingModeSales) {
+                                return value.toLocaleString("fr-FR", {
+                                    style: "currency",
+                                    currency: "EUR",
+                                    minimumFractionDigits: 2,
+                                });
+                            }
+                            return value;
+                        },
+                        color: "#000",
+                        font: { weight: "bold" },
+                    },
+                },
+            },
+            plugins: [ChartDataLabels],
+        });
+    }
+
+    // Un seul fetch pour les deux graphiques
+    fetch("../config/salesGenerator.php")
+        .then((res) => res.ok ? res.json() : Promise.reject("Erreur fetch revenus"))
+        .then((data) => {
+            revenueRawData = data;
+            prepareRevenueChart(revenueRawData); // graphique principal
+            renderPremiumChartSales(filterRevenueByPeriod(revenueRawData, currentInterval)); // graphique premium filtré
+        })
+        .catch((err) => console.error(err));
+
+    document.getElementById("toggleBillingMode")?.addEventListener("click", () => {
+        isBillingModeSales = !isBillingModeSales;
+        document.getElementById("toggleBillingMode").textContent = isBillingModeSales
+            ? "Afficher la répartition des revenus (€)"
+            : "Afficher la répartition en nombre";
+        renderPremiumChartSales(filterRevenueByPeriod(revenueRawData, currentInterval));
+    });
+
+    document.getElementById("periodSelect")?.addEventListener("change", (e) => {
+        currentInterval = e.target.value;
+        prepareRevenueChart(revenueRawData);
+        renderPremiumChartSales(filterRevenueByPeriod(revenueRawData, currentInterval));
+    });
+}
