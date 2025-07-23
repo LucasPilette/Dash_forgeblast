@@ -1,4 +1,4 @@
-<?php
+<!-- <?php
 header('Content-Type: application/json');
 
 // Affiche les erreurs si jamais un problème persiste (en dev uniquement)
@@ -53,4 +53,4 @@ function generate_users($count = 40) {
 }
 
 // Afficher en JSON
-echo json_encode(generate_users(rand(100, 1000)), JSON_PRETTY_PRINT);
+// echo json_encode(generate_users(rand(100, 1000)), JSON_PRETTY_PRINT); -->
