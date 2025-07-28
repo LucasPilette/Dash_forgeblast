@@ -613,14 +613,25 @@ document.getElementById("periodSelect")?.addEventListener("change", (e) => {
 });
 
 function fetchAndInitSquads() {
-  fetch("../config/squadGenerator.php")
+  fetch("http://localhost:3000/squads/list?page=1&limit=100")
     .then((res) =>
       res.ok ? res.json() : Promise.reject("Erreur chargement Squads")
     )
-    .then((squadData) => {
-      initSquadTable(squadData);
+    .then((data) => {
+      const squadsRaw = Array.isArray(data) ? data : data.squads;
+      // Mapping des champs
+      const squads = squadsRaw.map((s) => ({
+        squad_name: s.name,
+        squad_id: s.id,
+        game: s.gameId, // ou adapte si tu veux le nom du jeu
+        leader: s.leaderId, // ou adapte si tu veux le nom du leader
+        members: s.limit, // ou un autre champ si tu as le nombre réel de membres
+        created_date: s.createdAt ? s.createdAt.split("T")[0] : "",
+        status: s.active ? "actif" : "inactif",
+      }));
+      initSquadTable(squads);
     })
-    .catch((err) => console.error("Erreur squadGenerator:", err));
+    .catch((err) => console.error("Erreur API squads:", err));
 }
 
 function initSquadTable(squads) {

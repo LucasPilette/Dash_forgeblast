@@ -48,4 +48,4 @@ function generate_squads($count = 10) {
     return $squads;
 }
 
-echo json_encode(generate_squads(rand(10, 30)), JSON_PRETTY_PRINT);
+// echo json_encode(generate_squads(rand(10, 30)), JSON_PRETTY_PRINT);
