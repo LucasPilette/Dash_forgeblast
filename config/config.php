@@ -26,4 +26,4 @@ while ($row = pg_fetch_assoc($result)) {
     $users[] = $row;
 }
 
-echo json_encode($users);
+// echo json_encode($users);

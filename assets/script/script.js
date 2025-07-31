@@ -5,6 +5,30 @@ fetch("http://localhost:3000/users/list?page=1&limit=50")
     console.log(data);
   });
 
+// N'effectuer le fetch RevenueCat que si on est sur la page sales (présence de l'élément)
+if (document.getElementById("revenueLast30Days")) {
+  fetch("http://localhost:4000/api/revenuecat/metrics/overview")
+    .then(res => res.json())
+    .then(data => {
+      // Cherche le metric "revenue" sur 28 jours
+      const revenueMetric = Array.isArray(data.metrics)
+        ? data.metrics.find(m => m.id === "revenue" && m.period === "P28D")
+        : null;
+
+      if (revenueMetric) {
+        document.getElementById("revenueLast30Days").textContent =
+          revenueMetric.value + " " + (revenueMetric.unit || "€");
+      } else {
+        document.getElementById("revenueLast30Days").textContent =
+          "Donnée non disponible";
+      }
+    })
+    .catch(() => {
+      document.getElementById("revenueLast30Days").textContent =
+        "Erreur lors du chargement";
+    });
+}
+
 // ==========================
 // CONFIGURATION & VARIABLES
 // ==========================
@@ -190,7 +214,18 @@ function fetchAndInit() {
     .then((res) => (res.ok ? res.json() : Promise.reject("Erreur fetch")))
     .then((data) => {
       // data.users ou data selon ta réponse API
-      const rawUsers = Array.isArray(data) ? data : data.users;
+      console.log("Réponse API /users/list :", data);
+      const rawUsers =
+        Array.isArray(data.users)
+          ? data.users
+          : Array.isArray(data.users?.users)
+          ? data.users.users
+          : data.data || [];
+
+      if (!Array.isArray(rawUsers)) {
+        console.error("Erreur : la donnée users n'est pas un tableau", rawUsers, data);
+        return;
+      }
 
       // Transforme chaque user pour matcher le format attendu par le front
       usersData = rawUsers.map((u) => ({
@@ -211,7 +246,6 @@ function fetchAndInit() {
         createdAt: u.createdAt ? u.createdAt.split("T")[0] : "",
       }));
 
-      console.log(usersData);
       prepareUserChart();
       document.getElementById("toggleCumulative").textContent = isCumulative
         ? "Désactiver le mode cumulatif"
@@ -354,6 +388,8 @@ function renderPremiumChart(data) {
 function initUserTable(data) {
   const searchInput = document.getElementById("userSearchInput");
   const tbody = document.querySelector(".userRow");
+  if (!tbody) return; // Protection : n'exécute rien si pas sur la page concernée
+
   const paginationContainer =
     document.querySelector(".recentUsersList .pagination-controls") ||
     document.createElement("div");
@@ -379,6 +415,12 @@ function initUserTable(data) {
       if (user.premium === "yes") {
         tr.classList.add("premium");
       }
+      // Ajoute l'écouteur de clic ici :
+      tr.style.cursor = "pointer";
+      tr.addEventListener("click", () => {
+        window.location.href = `user_controller.php?id=${encodeURIComponent(user.user_id)}`;
+      });
+
       [
         "user_name",
         "user_id",
@@ -508,32 +550,28 @@ function updateUserCounters(users) {
   const stats = getUserStatsByMonth(users);
 
   // Mise à jour du DOM
-  document.getElementById("userCount").textContent = countAll;
-  document.getElementById("newUsersCount").textContent = count30;
+  const userCount = document.getElementById("userCount");
+  if (userCount) userCount.textContent = countAll;
+
+  const newUsersCount = document.getElementById("newUsersCount");
+  if (newUsersCount) newUsersCount.textContent = count30;
 
   const growthBadge = document.getElementById("userGrowthBadge");
-  growthBadge.textContent = `${stats.variation > 0 ? "+" : ""}${
-    stats.variation
-  }%`;
-  growthBadge.className = `badge ${
-    stats.variation > 0
-      ? "badge-positive"
-      : stats.variation < 0
-      ? "badge-negative"
-      : "badge-neutral"
-  }`;
+  if (growthBadge) {
+    growthBadge.textContent = `${stats.variation > 0 ? "+" : ""}${stats.variation}%`;
+    growthBadge.className = `badge ${
+      stats.variation > 0
+        ? "badge-positive"
+        : stats.variation < 0
+        ? "badge-negative"
+        : "badge-neutral"
+    }`;
+  }
 
-  // Badge de tendance glissante 30 jours
   const trendBadge = document.getElementById("userGrowthTrendBadge");
   if (trendBadge) {
-    trendBadge.textContent = `${
-      trendVariation > 0 ? "+" : ""
-    }${trendVariation}%`;
-    trendBadge.classList.remove(
-      "badge-positive",
-      "badge-negative",
-      "badge-neutral"
-    );
+    trendBadge.textContent = `${trendVariation > 0 ? "+" : ""}${trendVariation}%`;
+    trendBadge.classList.remove("badge-positive", "badge-negative", "badge-neutral");
     trendBadge.classList.add(
       trendVariation > 0
         ? "badge-positive"
@@ -545,16 +583,12 @@ function updateUserCounters(users) {
 
   const tooltip = document.getElementById("userGrowthTrendTooltip");
   if (tooltip) {
-    tooltip.textContent = `One month prior : ${countPrevious30} users${
-      countPrevious30 !== 1 ? "s" : ""
-    }`;
+    tooltip.textContent = `One month prior : ${countPrevious30} users${countPrevious30 !== 1 ? "s" : ""}`;
   }
   const userGrowthTooltip = document.getElementById("userGrowthTooltip");
   if (userGrowthTooltip) {
     const diff = stats.currentCount - stats.previousCount;
-    const variationText = `${diff > 0 ? "+" : ""}${diff} user${
-      Math.abs(diff) !== 1 ? "s" : ""
-    }`;
+    const variationText = `${diff > 0 ? "+" : ""}${diff} user${Math.abs(diff) !== 1 ? "s" : ""}`;
     userGrowthTooltip.textContent = `Last month : ${variationText}`;
   }
 }
@@ -637,6 +671,8 @@ function fetchAndInitSquads() {
 function initSquadTable(squads) {
   const searchInput = document.getElementById("squadSearchInput");
   const squadRows = document.querySelector(".squadRow");
+  if (!squadRows) return; // Protection : n'exécute rien si pas sur la page concernée
+
   const paginationContainer =
     document.querySelector(".squadTableContainer .pagination-controls") ||
     document.createElement("div");
@@ -676,7 +712,7 @@ function initSquadTable(squads) {
         td.textContent = squad[key] || "";
         tr.appendChild(td);
       });
-      squadRows.appendChild(tr);
+      squadRows.appendChild(tr); // <-- AJOUTE CETTE LIGNE
     });
   }
 

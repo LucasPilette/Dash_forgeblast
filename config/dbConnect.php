@@ -9,4 +9,4 @@ $endpoint_id = 'ep-polished-pine-a2zyqemx';
 
 $conn_string = "host=$host port=5432 dbname=$db user=$user password=$pass sslmode=require options='endpoint=$endpoint_id'";
 
-$dataDB = pg_connect($conn_string);
+// $dataDB = pg_connect($conn_string);

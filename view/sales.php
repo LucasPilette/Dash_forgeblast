@@ -34,4 +34,7 @@
                     <canvas id="premiumChart"></canvas>
                 </div>
             </div>
+            <div class="">
+                <p>Revenus des 30 derniers jours : <span id="revenueLast30Days">Chargement...</span></p>
+            </div>
 </div>

@@ -5,7 +5,6 @@
   padding: 0;
   box-sizing: border-box;
   font-family: "Author", sans-serif;
-  color: #121b20;
 }
 
 ul {
@@ -73,7 +72,13 @@ a > img {
   font-weight: 600;
 }
 
-.sideBarContent > ul > li > a :hover {
+.sideBarContent > ul > li > a :hover  {
+  color: #f39321;
+  font-weight: 700;
+  transition: color 200ms smooth;
+}
+
+.active{
   color: #f39321;
   font-weight: 700;
   transition: color 200ms smooth;
@@ -83,7 +88,7 @@ a > img {
 
 /* CONTENT */
 
-.contentDashboard, .contentSales {
+.contentDashboard, .contentSales, .contentEditUser {
   margin-left: 280px;
   display: flex;
   flex-direction: column;
@@ -455,4 +460,15 @@ td {
 
 .premium {
   background-color: #f5bd7a;
+}
+
+
+/******************************************* USER CONTENT *******************************************/
+
+.userInfos {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 20px;
 }
