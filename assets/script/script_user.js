@@ -1,3 +1,4 @@
+
 // Récupère l’id dans l’URL
 function getUserIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -6,16 +7,22 @@ function getUserIdFromUrl() {
 
 const userId = getUserIdFromUrl();
 if (userId) {
-  fetch(`http://localhost:3000/users/${encodeURIComponent(userId)}`)
+  fetch(`http://localhost:3100/users/${encodeURIComponent(userId)}`, {
+    method: "GET",
+    headers: {
+      'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
+    }
+  })
     .then(res => res.json())
     .then(user => {
       if (user.error) {
         // Affiche une erreur si besoin
-        document.querySelector(".userInfos").innerHTML += `<p style="color:red;">${user.error}</p>`;
+        document.querySelector(".userContent").innerHTML += `<p style="color:red;">${user.error}</p>`;
       } else {
         // Affiche les infos de l'utilisateur (exemple)
-        const userInfos = document.querySelector(".userInfos");
-        userInfos.innerHTML += `
+        const userContent = document.querySelector(".userContent");
+        userContent.innerHTML += `
+          <div class="userInfos">
           <div><h2>${user.name}</h2></div>
           <div><p>blast ID: ${user.blastId}</p></div>
           <div><p>Email: ${user.email}</p></div>
@@ -27,6 +34,11 @@ if (userId) {
           <div><p>Created At: ${new Date(user.createdAt).toLocaleString()}</p></div>
           <div><p>Updated At: ${new Date(user.updatedAt).toLocaleString()}</p></div>
           <button id="editUserBtn">Modifier l'utilisateur</button>
+          </div>
+          `;
+          if (window.currentUserRole == "admin"){
+            userContent.innerHTML += `
+          <div class="userForm">
           <form id="editUserForm" style="display:none; margin-top:20px;">
             <label>Nom : <input type="text" name="name" value="${user.name}" required></label><br>
             <label>blast ID : <input type="text" name="blastId" value="${user.blastId}" required></label><br>
@@ -41,7 +53,9 @@ if (userId) {
             <button type="submit">Enregistrer</button>
             <button type="button" id="cancelEditUser">Annuler</button>
           </form>
+          </div>
         `;
+          }
 
         // Gestion du bouton d'édition
         document.getElementById("editUserBtn").onclick = function() {
@@ -76,9 +90,11 @@ if (userId) {
 
           const payload = { name, email, premium, balance };
 
-          fetch(`http://localhost:3000/users/${encodeURIComponent(userId)}`, {
+          fetch(`http://localhost:3100/users/${encodeURIComponent(userId)}`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json",
+                      'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
+            },
             body: JSON.stringify(payload)
           })
             .then(res => res.json())
