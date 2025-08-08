@@ -7,6 +7,9 @@
     <title>Dashboard</title>
     <link rel="stylesheet" href="../assets/style/style.css">
     <link href="https://api.fontshare.com/v2/css?f[]=author@400,500,600,700&display=swap" rel="stylesheet">
+    <script>
+        window.currentUserRole = "<?php echo $_SESSION['user_role'] ?? 'guest'; ?>";
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
@@ -36,5 +39,9 @@
                 <li><a href="/user"><img src="../assets/src/headphoneSVG.svg" alt=""><span>User Support</span></a></li>
                 <li><a href="/setting"><img src="../assets/src/settingSVG.svg" alt=""><span>Setting</span></a></li> -->
             </ul>
+                    <div class="logout">
+            <a href="../controller/logout_controller.php">Déconnexion</a>
         </div>
+        </div>
+
     </div>

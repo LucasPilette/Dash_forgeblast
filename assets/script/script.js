@@ -1,9 +1,12 @@
 // TEST DATABASE
-fetch("http://localhost:3100/users/list?page=1&limit=50", {
-  headers: {
-    "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b"
-  }
-})
+fetch("http://localhost:3100/users/list?page=1&limit=50",
+  {
+          method: "GET",
+          headers: {
+            'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
+          }
+        }
+)
   .then((res) => res.json())
   .then((data) => {
     console.log(data);
@@ -214,11 +217,14 @@ function filterRevenueByPeriod(data, period) {
 // ==========================
 
 function fetchAndInit() {
-  fetch("http://localhost:3100/users/list?page=1&limit=100", {
-    headers: {
-      "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b"
-    }
-  })
+  fetch("http://localhost:3100/users/list?page=1&limit=100",
+        {
+          method: "GET",
+          headers: {
+            'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
+          }
+        }
+  )
     .then((res) => (res.ok ? res.json() : Promise.reject("Erreur fetch")))
     .then((data) => {
       // data.users ou data selon ta réponse API
@@ -672,11 +678,14 @@ const premiumChartSales = document.getElementById("premiumChartSales");
 const toggleBillingModeSales = document.getElementById("toggleBillingModeSales");
 
 function fetchAndInitSquads() {
-  fetch("http://localhost:3100/squads/list?page=1&limit=100", {
-    headers: {
-      "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b"
-    }
-  })
+  fetch("http://localhost:3100/squads/list?page=1&limit=100",
+    {
+          method: "GET",
+          headers: {
+            'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
+          }
+        }
+  )
     .then((res) =>
       res.ok ? res.json() : Promise.reject("Erreur chargement Squads")
     )

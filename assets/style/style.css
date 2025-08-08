@@ -121,6 +121,25 @@ a > img {
   margin-right: 20px;
 }
 
+.logout {
+  color: #121b20;
+  font-size: 25px;
+  font-weight: 600;
+  margin-right: 20px;
+}
+
+.logout:hover {
+  color: #f39321;
+  transition: color 200ms smooth;
+}
+
+.sideBarContent{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 /* GRID CONTENT USER*/
 
 .contentUser {
@@ -465,10 +484,130 @@ td {
 
 /******************************************* USER CONTENT *******************************************/
 
+.userContent{
+  display: flex;
+}
 .userInfos {
   width: 100%;
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  gap: 20px;
+  padding: 32px 24px;
+  gap: 24px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  border: 1px solid #f39321;
+  max-width: 500px;
+  margin: 32px ;
+}
+
+.userInfos h2 {
+  color: #f39321;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.userInfos div, .userInfos p {
+  font-size: 1.1rem;
+  color: #121b20;
+  margin-bottom: 8px;
+}
+
+#editUserForm {
+  background: #f9f9f9;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(243,147,33,0.08);
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid #f39321;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+#editUserForm label {
+  font-weight: 600;
+  color: #121b20;
+  margin-bottom: 6px;
+  display: block;
+}
+
+#editUserForm input[type="text"],
+#editUserForm input[type="email"],
+#editUserForm input[type="number"],
+#editUserForm select {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #fff;
+  transition: border 0.2s;
+}
+
+#editUserForm input:focus,
+#editUserForm select:focus {
+  border-color: #f39321;
+  outline: none;
+}
+
+#editUserForm button[type="submit"] {
+  background: #f39321;
+  color: #fff;
+  border: none;
+  padding: 12px 0;
+  width: 100%;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.2s;
+}
+
+#editUserForm button[type="submit"]:hover {
+  background: #121b20;
+}
+
+#editUserForm button[type="button"] {
+  background: #fff;
+  color: #f39321;
+  border: 1px solid #f39321;
+  padding: 10px 0;
+  width: 100%;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
+#editUserForm button[type="button"]:hover {
+  background: #f39321;
+  color: #fff;
+}
+
+/* Stylisation du bouton Modifier l'utilisateur */
+#editUserBtn {
+  background: #f39321;
+  color: #fff;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 18px 0 0 0;
+  box-shadow: 0 2px 8px rgba(243,147,33,0.08);
+  transition: background 0.2s, color 0.2s;
+  display: inline-block;
+}
+
+#editUserBtn:hover {
+  background: #121b20;
+  color: #fff;
 }

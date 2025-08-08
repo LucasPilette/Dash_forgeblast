@@ -2,6 +2,12 @@
 
 require_once(dirname(__FILE__) . '/../config/dbConnect.php');
 
+session_start();
+if (!isset($_SESSION['user_role'])) {
+    header('Location: ../view/login.php');
+    exit;
+}
+
 // Si on appelle en AJAX (fetch), retourne le JSON de l'utilisateur
 if (isset($_GET['api']) && $_GET['api'] === '1' && isset($_GET['id'])) {
     $userId = pg_escape_string($dataDB, $_GET['id']);

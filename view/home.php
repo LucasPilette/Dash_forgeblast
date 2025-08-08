@@ -5,7 +5,7 @@
                 <h2>Dashboard</h2>
             </div>
             <div class="userData">
-                <h2>Admin</h2>
+                <h2><?php echo $_SESSION['user_role']; ?></h2>
             </div>
         </div>
         <div class="content">
