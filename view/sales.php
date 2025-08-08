@@ -29,9 +29,9 @@
                 <div class="premiumRepartition">
                     <div class="premiumRepartitionHead">
                         <h2>Répartition des revenus</h2>
-                        <button id="toggleBillingMode">Afficher par facturation (premium)</button>
+                        <button id="toggleBillingModeSales">Afficher par facturation (premium)</button>
                     </div>
-                    <canvas id="premiumChart"></canvas>
+                    <canvas id="premiumChartSales"></canvas>
                 </div>
             </div>
             <div class="">

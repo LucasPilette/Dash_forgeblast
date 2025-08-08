@@ -6,7 +6,11 @@ function getUserIdFromUrl() {
 
 const userId = getUserIdFromUrl();
 if (userId) {
-  fetch(`http://localhost:3000/users/${encodeURIComponent(userId)}`)
+  fetch(`http://localhost:3100/users/${encodeURIComponent(userId)}`, {
+    headers: {
+      "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b"
+    }
+  })
     .then(res => res.json())
     .then(user => {
       if (user.error) {
@@ -76,9 +80,12 @@ if (userId) {
 
           const payload = { name, email, premium, balance };
 
-          fetch(`http://localhost:3000/users/${encodeURIComponent(userId)}`, {
+          fetch(`http://localhost:3100/users/${encodeURIComponent(userId)}`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b"
+            },
             body: JSON.stringify(payload)
           })
             .then(res => res.json())

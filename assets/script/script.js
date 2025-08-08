@@ -1,5 +1,9 @@
 // TEST DATABASE
-fetch("http://localhost:3000/users/list?page=1&limit=50")
+fetch("http://localhost:3100/users/list?page=1&limit=50", {
+  headers: {
+    "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b"
+  }
+})
   .then((res) => res.json())
   .then((data) => {
     console.log(data);
@@ -210,7 +214,11 @@ function filterRevenueByPeriod(data, period) {
 // ==========================
 
 function fetchAndInit() {
-  fetch("http://localhost:3000/users/list?page=1&limit=100")
+  fetch("http://localhost:3100/users/list?page=1&limit=100", {
+    headers: {
+      "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b"
+    }
+  })
     .then((res) => (res.ok ? res.json() : Promise.reject("Erreur fetch")))
     .then((data) => {
       // data.users ou data selon ta réponse API
@@ -247,10 +255,16 @@ function fetchAndInit() {
       }));
 
       prepareUserChart();
-      document.getElementById("toggleCumulative").textContent = isCumulative
-        ? "Désactiver le mode cumulatif"
-        : "Activer le mode cumulatif";
-      document.getElementById("periodSelect").value = "1y";
+      const toggleCumulativeBtn = document.getElementById("toggleCumulative");
+      if (toggleCumulativeBtn) {
+        toggleCumulativeBtn.textContent = isCumulative
+          ? "Désactiver le mode cumulatif"
+          : "Activer le mode cumulatif";
+      }
+      const periodSelect = document.getElementById("periodSelect");
+      if (periodSelect) {
+        periodSelect.value = "1y";
+      }
       renderPremiumChart(usersData);
       updateUserCounters(usersData);
       initUserTable(usersData);
@@ -579,6 +593,9 @@ function updateUserCounters(users) {
         ? "badge-negative"
         : "badge-neutral"
     );
+  } else {
+    // Protection contre l'erreur : l'élément n'existe pas
+    console.warn("userGrowthTrendBadge introuvable dans le DOM");
   }
 
   const tooltip = document.getElementById("userGrowthTrendTooltip");
@@ -646,8 +663,20 @@ document.getElementById("periodSelect")?.addEventListener("change", (e) => {
   renderChart(filterDataByPeriod(currentInterval));
 });
 
+// Pour la page home
+const premiumChartHome = document.getElementById("premiumChartHome");
+const toggleBillingModeHome = document.getElementById("toggleBillingModeHome");
+
+// Pour la page sales
+const premiumChartSales = document.getElementById("premiumChartSales");
+const toggleBillingModeSales = document.getElementById("toggleBillingModeSales");
+
 function fetchAndInitSquads() {
-  fetch("http://localhost:3000/squads/list?page=1&limit=100")
+  fetch("http://localhost:3100/squads/list?page=1&limit=100", {
+    headers: {
+      "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b"
+    }
+  })
     .then((res) =>
       res.ok ? res.json() : Promise.reject("Erreur chargement Squads")
     )
@@ -918,32 +947,80 @@ document.getElementById("toggleCumulative")?.addEventListener("click", () => {
   prepareRevenueChart(revenueRawData); // Utilise les données déjà chargées
 });
 
-if (
-  document.getElementById("premiumChart") &&
-  document.getElementById("revenueChart")
-) {
+// HOME : graphique premium
+if (document.getElementById("premiumChartHome")) {
+  let isBillingModeHome = false;
+
+  function renderPremiumChartHome(data) {
+    const canvas = document.getElementById("premiumChartHome");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (billingChart) billingChart.destroy();
+
+    let labels, chartData;
+    if (isBillingModeHome) {
+      const filtered = data.filter((u) => u.premium === "yes");
+      const monthly = filtered.filter((u) => u.billing === "monthly").length;
+      const yearly = filtered.filter((u) => u.billing === "yearly").length;
+      labels = ["Mensuel", "Annuel"];
+      chartData = [monthly, yearly];
+    } else {
+      const yes = data.filter((u) => u.premium === "yes").length;
+      const no = data.filter((u) => u.premium === "no").length;
+      labels = ["Premium", "Gratuit"];
+      chartData = [yes, no];
+    }
+
+    billingChart = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: labels,
+        datasets: [{ data: chartData, backgroundColor: ["#f39321", "#cccccc"] }],
+      },
+      options: {
+        plugins: {
+          title: {
+            display: true,
+            text: isBillingModeHome
+              ? "Répartition Mensuel vs Annuel"
+              : "Premium vs Gratuit",
+          },
+          legend: { position: "bottom" },
+        },
+      },
+    });
+  }
+
+  // Initialisation au chargement
+  renderPremiumChartHome(usersData);
+
+  document.getElementById("toggleBillingModeHome")?.addEventListener("click", () => {
+    isBillingModeHome = !isBillingModeHome;
+    document.getElementById("toggleBillingModeHome").textContent = isBillingModeHome
+      ? "Afficher Premium vs Gratuit"
+      : "Afficher par facturation (premium)";
+    renderPremiumChartHome(usersData);
+  });
+}
+
+// SALES : graphique premium
+if (document.getElementById("premiumChartSales")) {
   let isBillingModeSales = false;
 
   function renderPremiumChartSales(data) {
-    const canvas = document.getElementById("premiumChart");
+    const canvas = document.getElementById("premiumChartSales");
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (billingChart) billingChart.destroy();
 
     let labels, chartData, chartTitle;
     if (isBillingModeSales) {
-      // Répartition en nombre de billing
-      const monthlyCount = data.filter(
-        (u) => u.billing_type === "monthly"
-      ).length;
-      const yearlyCount = data.filter(
-        (u) => u.billing_type === "yearly"
-      ).length;
+      const monthlyCount = data.filter((u) => u.billing_type === "monthly").length;
+      const yearlyCount = data.filter((u) => u.billing_type === "yearly").length;
       labels = ["Mensuel", "Annuel"];
       chartData = [monthlyCount, yearlyCount];
       chartTitle = "Répartition des facturations (nombre)";
     } else {
-      // Répartition des revenus en euros
       const monthlyRevenue = data
         .filter((u) => u.billing_type === "monthly")
         .reduce((sum, u) => sum + (parseFloat(u.amount) || 0), 0);
@@ -959,66 +1036,36 @@ if (
       type: "pie",
       data: {
         labels: labels,
-        datasets: [
-          { data: chartData, backgroundColor: ["#f39321", "#d87b0c"] },
-        ],
+        datasets: [{ data: chartData, backgroundColor: ["#f39321", "#d87b0c"] }],
       },
       options: {
         plugins: {
           title: { display: true, text: chartTitle },
           legend: { position: "bottom" },
-          datalabels: {
-            formatter: function (value, context) {
-              if (!isBillingModeSales) {
-                return value.toLocaleString("fr-FR", {
-                  style: "currency",
-                  currency: "EUR",
-                  minimumFractionDigits: 2,
-                });
-              }
-              return value;
-            },
-            color: "#000",
-            font: { weight: "bold" },
-          },
         },
       },
-      plugins: [ChartDataLabels],
     });
   }
 
-  // Un seul fetch pour les deux graphiques
+  // Initialisation au chargement
   fetch("../config/salesGenerator.php")
-    .then((res) =>
-      res.ok ? res.json() : Promise.reject("Erreur fetch revenus")
-    )
+    .then((res) => res.ok ? res.json() : Promise.reject("Erreur fetch revenus"))
     .then((data) => {
       revenueRawData = data;
-      prepareRevenueChart(revenueRawData); // graphique principal
-      renderPremiumChartSales(
-        filterRevenueByPeriod(revenueRawData, currentInterval)
-      ); // graphique premium filtré
+      renderPremiumChartSales(filterRevenueByPeriod(revenueRawData, currentInterval));
     })
     .catch((err) => console.error(err));
 
-  document
-    .getElementById("toggleBillingMode")
-    ?.addEventListener("click", () => {
-      isBillingModeSales = !isBillingModeSales;
-      document.getElementById("toggleBillingMode").textContent =
-        isBillingModeSales
-          ? "Afficher la répartition des revenus (€)"
-          : "Afficher la répartition en nombre";
-      renderPremiumChartSales(
-        filterRevenueByPeriod(revenueRawData, currentInterval)
-      );
-    });
+  document.getElementById("toggleBillingModeSales")?.addEventListener("click", () => {
+    isBillingModeSales = !isBillingModeSales;
+    document.getElementById("toggleBillingModeSales").textContent = isBillingModeSales
+      ? "Afficher la répartition des revenus (€)"
+      : "Afficher la répartition en nombre";
+    renderPremiumChartSales(filterRevenueByPeriod(revenueRawData, currentInterval));
+  });
 
   document.getElementById("periodSelect")?.addEventListener("change", (e) => {
     currentInterval = e.target.value;
-    prepareRevenueChart(revenueRawData);
-    renderPremiumChartSales(
-      filterRevenueByPeriod(revenueRawData, currentInterval)
-    );
+    renderPremiumChartSales(filterRevenueByPeriod(revenueRawData, currentInterval));
   });
 }
