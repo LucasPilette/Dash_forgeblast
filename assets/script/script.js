@@ -1,62 +1,25 @@
-// TEST DATABASE
-fetch("http://localhost:3100/users/list?page=1&limit=50",
-  {
-          method: "GET",
-          headers: {
-            'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
-          }
-        }
-)
-  .then((res) => res.json())
-  .then((data) => {
-    console.log(data);
-  });
-
-// N'effectuer le fetch RevenueCat que si on est sur la page sales (présence de l'élément)
-if (document.getElementById("revenueLast30Days")) {
-  fetch("http://localhost:4000/api/revenuecat/metrics/overview")
-    .then(res => res.json())
-    .then(data => {
-      // Cherche le metric "revenue" sur 28 jours
-      const revenueMetric = Array.isArray(data.metrics)
-        ? data.metrics.find(m => m.id === "revenue" && m.period === "P28D")
-        : null;
-
-      if (revenueMetric) {
-        document.getElementById("revenueLast30Days").textContent =
-          revenueMetric.value + " " + (revenueMetric.unit || "€");
-      } else {
-        document.getElementById("revenueLast30Days").textContent =
-          "Donnée non disponible";
-      }
-    })
-    .catch(() => {
-      document.getElementById("revenueLast30Days").textContent =
-        "Erreur lors du chargement";
-    });
-}
 
 // ==========================
-// CONFIGURATION & VARIABLES
+// CONFIGURATION & VARIABLES (unique)
 // ==========================
-let fullData = [];
-let usersData = [];
-let currentInterval = "1y";
+let currentInterval = "1m";
 let isCumulative = true;
+let chart = null;
+let fullData = [];         // registrations grouped by date
+let usersData = [];        // normalized users array for counters/charts
+
+// Revenue (only used on sales page if elements exist)
 let billingChart = null;
 let isBillingMode = false;
-let chart = null;
 let revenueChart = null;
-let isRevenueCumulative = true; // Ajoute cette variable
-let revenueRawData = []; // Stocke les données brutes
+let isRevenueCumulative = true;
+let revenueRawData = [];
 
 // ==========================
-// FONCTIONS UTILITAIRES
+// UTILITAIRES DATES & AGRÉGATION (unique)
 // ==========================
-
 function computeCumulative(data) {
-  let ios = 0,
-    android = 0;
+  let ios = 0, android = 0;
   return data.map((item) => ({
     date: item.date,
     ios: (ios += item.ios),
@@ -65,9 +28,7 @@ function computeCumulative(data) {
 }
 
 function computeRevenueCumulative(data) {
-  let monthly = 0,
-    yearly = 0,
-    total = 0;
+  let monthly = 0, yearly = 0, total = 0;
   return data.map((item) => ({
     date: item.date,
     monthly: (monthly += item.monthly),
@@ -108,29 +69,13 @@ function getStartDateFromPeriod(value) {
   const now = new Date();
   const start = new Date(now);
   switch (value) {
-    case "1d":
-      start.setDate(now.getDate() - 1);
-      break;
-    case "7d":
-      start.setDate(now.getDate() - 7);
-      break;
-    case "1m":
-      start.setMonth(now.getMonth() - 1);
-      break;
-    case "3m":
-      start.setMonth(now.getMonth() - 2);
-      start.setDate(1);
-      break;
-    case "6m":
-      start.setMonth(now.getMonth() - 5);
-      start.setDate(1);
-      break;
-    case "1y":
-      start.setFullYear(now.getFullYear() - 1);
-      start.setDate(1);
-      break;
-    default:
-      return null;
+    case "1d": start.setDate(now.getDate() - 1); break;
+    case "7d": start.setDate(now.getDate() - 7); break;
+    case "1m": start.setMonth(now.getMonth() - 1); break;
+    case "3m": start.setMonth(now.getMonth() - 2); start.setDate(1); break;
+    case "6m": start.setMonth(now.getMonth() - 5); start.setDate(1); break;
+    case "1y": start.setFullYear(now.getFullYear() - 1); start.setDate(1); break;
+    default: return null;
   }
   return start;
 }
@@ -154,10 +99,7 @@ function groupDataByMonth(data) {
   const grouped = {};
   data.forEach(({ date, ios, android }) => {
     const d = new Date(date);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}`;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     grouped[key] = grouped[key] || { date: key, ios: 0, android: 0 };
     grouped[key].ios += ios;
     grouped[key].android += android;
@@ -169,21 +111,27 @@ function generateMonthRange(start, end) {
   const result = [];
   const current = new Date(start.getFullYear(), start.getMonth(), 1);
   while (current <= end) {
-    result.push(
-      `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`
-    );
+    result.push(`${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}`);
     current.setMonth(current.getMonth() + 1);
   }
   return result;
 }
 
 function fillMissingMonths(grouped, range) {
-  return range.map(
-    (month) => grouped[month] || { date: month, ios: 0, android: 0 }
-  );
+  return range.map((month) => grouped[month] || { date: month, ios: 0, android: 0 });
+}
+
+// Group data by day (YYYY-MM-DD) -> { date, ios, android }
+function groupDataByDay(data) {
+  const grouped = {};
+  data.forEach(({ date, ios = 0, android = 0 }) => {
+    if (!date) return;
+    const key = String(date).slice(0, 10);
+    if (!grouped[key]) grouped[key] = { date: key, ios: 0, android: 0 };
+    grouped[key].ios += Number(ios || 0);
+    grouped[key].android += Number(android || 0);
+  });
+  return grouped;
 }
 
 function filterDataByPeriod(period) {
@@ -196,116 +144,323 @@ function filterDataByPeriod(period) {
   if (["1d", "7d", "1m"].includes(period)) {
     return fillMissingDates(filtered, generateDateRange(start, end));
   } else {
-    return fillMissingMonths(
-      groupDataByMonth(filtered),
-      generateMonthRange(start, end)
-    );
+    return fillMissingMonths(groupDataByMonth(filtered), generateMonthRange(start, end));
   }
 }
 
-function filterRevenueByPeriod(data, period) {
-  const start = getStartDateFromPeriod(period);
-  const end = new Date();
-  return data.filter(({ billing_date }) => {
-    const d = new Date(billing_date);
-    return d >= start && d <= end;
+// ==========================
+// PAGINATION USERS + RECHERCHE/FILTRES (unique)
+// ==========================
+function setupUserPagination() {
+  const userTbody = document.querySelector("tbody.userRow");
+  const pagContainer = document.querySelector(".user-pagination");
+  if (!userTbody || !pagContainer) return;
+
+  let allRows = Array.from(userTbody.querySelectorAll("tr[data-search]"));
+  let currentPage = 1;
+  const perPage = 15;
+
+  function renderUserPage(page) {
+    const filtered = allRows.filter(tr => tr.dataset.filtered !== "0");
+    allRows.forEach(tr => tr.style.display = "none");
+    const start = (page - 1) * perPage;
+    filtered.slice(start, start + perPage).forEach(tr => tr.style.display = "");
+  }
+
+  function updateUserPagination() {
+    const filtered = allRows.filter(tr => tr.dataset.filtered !== "0");
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+    pagContainer.innerHTML = `
+      <button id="userPrevPage" ${currentPage === 1 ? "disabled" : ""}>Précédent</button>
+      <span class="paginationSpan">${currentPage} / ${totalPages}</span>
+      <button id="userNextPage" ${currentPage === totalPages ? "disabled" : ""}>Suivant</button>
+    `;
+    document.getElementById("userPrevPage")?.addEventListener("click", () => {
+      if (currentPage > 1) { currentPage--; renderUserPage(currentPage); updateUserPagination(); }
+    });
+    document.getElementById("userNextPage")?.addEventListener("click", () => {
+      const max = Math.max(1, Math.ceil(filtered.length / perPage));
+      if (currentPage < max) { currentPage++; renderUserPage(currentPage); updateUserPagination(); }
+    });
+  }
+
+  document.addEventListener('users-table-updated', () => {
+    allRows = Array.from(userTbody.querySelectorAll("tr[data-search]"));
+    currentPage = 1;
+    renderUserPage(currentPage);
+    updateUserPagination();
+  });
+
+  // init
+  allRows.forEach(tr => tr.dataset.filtered = "1");
+  renderUserPage(currentPage);
+  updateUserPagination();
+}
+
+// Recherche + filtres qui posent uniquement data-filtered puis notifient la pagination
+function initUserFilters() {
+  const $ = (s) => document.querySelector(s);
+  const input =
+    $("#userSearch") || $(".search-input") || $("#search") || $("#searchInput") ||
+    document.querySelector('input[type="search"]');
+  const cbPremium = $("#filterPremium") || $("#filter-premium") || $("#chkPremium");
+  const cbFree = $("#filterFree") || $("#filter-free") || $("#chkFree");
+  const tbody = $("#usersTbody") || document.querySelector("tbody.userRow") || document.querySelector("#usersTable tbody");
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll("tr"));
+
+  const norm = (s) => (s || "").toString().normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  const rowIsPremium = (tr) => {
+    const v = (tr.dataset.premium || "").trim().toLowerCase();
+    return v === "true" || v === "1" || v === "yes" || v === "oui";
+  };
+
+  function applyFilter() {
+    const q = norm(input?.value || "");
+    const wantPremium = cbPremium ? cbPremium.checked : true;
+    const wantFree = cbFree ? cbFree.checked : true;
+
+    rows.forEach((tr) => {
+      const isPremium = rowIsPremium(tr);
+      const tierOK = (isPremium && wantPremium) || (!isPremium && wantFree);
+      const hay = tr.getAttribute("data-search") || "";
+      const textOK = norm(hay).includes(q);
+      tr.dataset.filtered = (tierOK && textOK) ? "1" : "0";
+    });
+    document.dispatchEvent(new Event("users-table-updated"));
+  }
+
+  if (input) input.addEventListener("input", applyFilter);
+  if (cbPremium) cbPremium.addEventListener("change", applyFilter);
+  if (cbFree) cbFree.addEventListener("change", applyFilter);
+
+  applyFilter(); // init
+}
+
+// ==========================
+// EXTRA : recherche SQUADS simple (si présent sur la page)
+// ==========================
+function initSquadSearch() {
+  const squadSearch = document.getElementById("squadSearchInput");
+  const squadTbody = document.querySelector("tbody.squadRow");
+  if (!squadSearch || !squadTbody) return;
+  squadSearch.addEventListener("input", () => {
+    const q = squadSearch.value.trim().toLowerCase();
+    Array.from(squadTbody.querySelectorAll("tr")).forEach(tr => {
+      const hay = tr.getAttribute("data-search") || "";
+      tr.style.display = hay.toLowerCase().includes(q) ? "" : "none";
+    });
   });
 }
 
 // ==========================
-// CHARGEMENT PRINCIPAL
+// COMPTEURS / STATS (unique)
 // ==========================
+function updateUserCounters(users) {
+  // Total users
+  const total = users.length;
+  const totalElt = document.getElementById('userCount');
+  if (totalElt) totalElt.textContent = total;
 
-function fetchAndInit() {
-  fetch("http://localhost:3100/users/list?page=1&limit=100",
-        {
-          method: "GET",
-          headers: {
-            'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
-          }
-        }
-  )
-    .then((res) => (res.ok ? res.json() : Promise.reject("Erreur fetch")))
-    .then((data) => {
-      // data.users ou data selon ta réponse API
-      console.log("Réponse API /users/list :", data);
-      const rawUsers =
-        Array.isArray(data.users)
-          ? data.users
-          : Array.isArray(data.users?.users)
-          ? data.users.users
-          : data.data || [];
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo  = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-      if (!Array.isArray(rawUsers)) {
-        console.error("Erreur : la donnée users n'est pas un tableau", rawUsers, data);
-        return;
-      }
+  // Counts over sliding windows: last 30 days vs previous 30 days
+  const newUsersCount = users.filter(u => {
+    const d = new Date(u.created_at || u.createdAt);
+    return d >= thirtyDaysAgo && d <= now;
+  }).length;
 
-      // Transforme chaque user pour matcher le format attendu par le front
-      usersData = rawUsers.map((u) => ({
-        user_name: u.name || "",
-        user_id: u.id,
-        blast_id: u.blastId,
-        email: u.email,
-        status: u.active ? "actif" : "inactif",
-        premium: u.premium ? "yes" : "no",
-        billing:
-          u.premium === true
-            ? u.paidFeature === true
-              ? "monthly"
-              : "yearly"
-            : "free",
-        join_date: u.createdAt ? u.createdAt.split("T")[0] : "",
-        os: u.platform || "",
-        createdAt: u.createdAt ? u.createdAt.split("T")[0] : "",
+  const prev30Count = users.filter(u => {
+    const d = new Date(u.created_at || u.createdAt);
+    return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+  }).length;
+
+  // Growth: percentage change between the two 30-day windows.
+  // If prev30Count === 0 we display '—' to avoid misleading huge percentages.
+  let growth = null;
+  if (prev30Count > 0) {
+    growth = ((newUsersCount - prev30Count) / prev30Count) * 100;
+  } else if (newUsersCount === 0) {
+    growth = 0; // no change
+  }
+
+  const growthBadge = document.getElementById('userGrowthBadge');
+  if (growthBadge) {
+    if (growth === null) {
+      growthBadge.textContent = '—';
+      growthBadge.className = 'badge badge-neutral';
+    } else {
+      growthBadge.textContent = `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
+      growthBadge.className = 'badge ' + (growth > 0 ? 'badge-positive' : growth < 0 ? 'badge-negative' : 'badge-neutral');
+    }
+  }
+  const newUsersElt = document.getElementById('newUsersCount');
+  if (newUsersElt) newUsersElt.textContent = newUsersCount;
+
+  // For trend badge use the same sliding-window logic
+  let trendVariation = null;
+  if (prev30Count > 0) trendVariation = ((newUsersCount - prev30Count) / prev30Count) * 100;
+  else if (newUsersCount === 0) trendVariation = 0;
+
+  const trendBadge = document.getElementById('userGrowthTrendBadge');
+  if (trendBadge) {
+    if (trendVariation === null) {
+      trendBadge.textContent = '—';
+      trendBadge.className = 'badge badge-neutral';
+    } else {
+      trendBadge.textContent = `${trendVariation >= 0 ? '+' : ''}${trendVariation.toFixed(1)}%`;
+      trendBadge.className = 'badge ' + (trendVariation > 0 ? 'badge-positive' : trendVariation < 0 ? 'badge-negative' : 'badge-neutral');
+    }
+  }
+}
+
+// ==========================
+// DONNÉES UTILISATEURS (unique)
+// ==========================
+function collectUsersFromDom() {
+  const rows = document.querySelectorAll('tbody.userRow tr[data-created]');
+  const users = [];
+  rows.forEach((tr) => {
+    const createdAt = tr.getAttribute('data-created') || ''; // "YYYY-MM-DD"
+    const os = (tr.getAttribute('data-os') || '').toLowerCase(); // ios / android
+    const premium = tr.getAttribute('data-premium') === 'true';
+    users.push({ createdAt, os, premium });
+  });
+  return users;
+}
+
+async function fetchAndInit() {
+  // 1) Données injectées par PHP
+  if (Array.isArray(window.usersData) && window.usersData.length) {
+    usersData = window.usersData.map(u => ({
+      createdAt: u.createdAt || u.created_at || '',
+      os: (u.platform || '').toLowerCase(),
+      premium: !!u.premium
+    }));
+  } else {
+    // 2) Sinon, DOM
+    usersData = collectUsersFromDom();
+  }
+
+  // 3) Fallback API si toujours vide
+  if (!usersData.length) {
+    try {
+      const API = "http://localhost:3100/users/list";
+      const HEADERS = { method: "GET", headers: { "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b" } };
+      const res = await fetch(`${API}?page=1&limit=500`, HEADERS);
+      const json = await res.json();
+      const list = Array.isArray(json?.users) ? json.users :
+                   Array.isArray(json?.data)  ? json.data  :
+                   Array.isArray(json)        ? json       : [];
+      const normPlatform = (p) => (p || "").toString().trim().toLowerCase();
+      const toYmd = (d) => {
+        const dt = d ? new Date(d) : null;
+        return dt && !isNaN(dt) ? dt.toISOString().slice(0, 10) : "";
+      };
+      usersData = list.map(u => ({
+        createdAt: toYmd(u.createdAt),
+        os: normPlatform(u.platform),
+        premium: !!u.premium,
       }));
+    } catch (e) {
+      console.error("Fallback API users fetch failed", e);
+      usersData = [];
+    }
+  }
 
-      prepareUserChart();
-      const toggleCumulativeBtn = document.getElementById("toggleCumulative");
-      if (toggleCumulativeBtn) {
-        toggleCumulativeBtn.textContent = isCumulative
-          ? "Désactiver le mode cumulatif"
-          : "Activer le mode cumulatif";
-      }
-      const periodSelect = document.getElementById("periodSelect");
-      if (periodSelect) {
-        periodSelect.value = "1y";
-      }
-      renderPremiumChart(usersData);
-      updateUserCounters(usersData);
-      initUserTable(usersData);
-    })
-    .catch((err) => console.error(err));
-}
-
-function fetchAndInitRevenue() {
-  fetch("../config/salesGenerator.php")
-    .then((res) =>
-      res.ok ? res.json() : Promise.reject("Erreur fetch revenus")
-    )
-    .then((data) => {
-      revenueRawData = data; // Stocke les données une fois
-      prepareRevenueChart(revenueRawData);
-    })
-    .catch((err) => console.error(err));
+  // 4) Graph + compteurs
+  prepareUserChart();
+  renderPremiumChart();
+  updateUserCounters(usersData);
 }
 
 // ==========================
-// CHART UTILISATEURS
+// CHART UTILISATEURS (unique)
 // ==========================
-
 function prepareUserChart() {
+  // Normalize usersData into daily rows (date, ios, android)
   const dateMap = {};
   usersData.forEach(({ createdAt, os }) => {
-    if (!dateMap[createdAt])
-      dateMap[createdAt] = { date: createdAt, ios: 0, android: 0 };
+    if (!createdAt) return;
+    if (!dateMap[createdAt]) dateMap[createdAt] = { date: createdAt, ios: 0, android: 0 };
     if (os === "ios") dateMap[createdAt].ios++;
     if (os === "android") dateMap[createdAt].android++;
   });
-  fullData = Object.values(dateMap).sort(
-    (a, b) => new Date(a.date) - new Date(b.date)
-  );
-  renderChart(filterDataByPeriod(currentInterval));
+  fullData = Object.values(dateMap).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Prepare chart data according to currentInterval (daily granularity for short ranges)
+  const start = getStartDateFromPeriod(currentInterval);
+  const end = new Date();
+  let prepared = [];
+  // Diagnostic logging to help debug empty daily ranges
+  console.debug('[prepareUserChart] currentInterval=', currentInterval, 'start=', start && start.toISOString(), 'end=', end.toISOString(), 'usersData.length=', usersData.length, 'fullData.length=', fullData.length);
+  if (["1d", "7d", "1m"].includes(currentInterval)) {
+    // day granularity
+  const grouped = groupDataByDay(fullData);
+  console.debug('[prepareUserChart] grouped daily keys sample=', Object.keys(grouped).slice(0,10));
+    const range = generateDateRange(start, end);
+  prepared = range.map(date => grouped[date] || { date, ios: 0, android: 0 });
+  console.debug('[prepareUserChart] range length=', range.length, 'prepared sample=', prepared.slice(0,10));
+  } else {
+    // month granularity
+    const grouped = groupDataByMonth(fullData);
+    const mrange = generateMonthRange(start, end);
+    prepared = mrange.map(month => grouped[month] || { date: month, ios: 0, android: 0 });
+  }
+
+  renderChart(prepared);
+}
+
+// Renders premium vs free repartition using usersData or DOM fallback
+function renderPremiumChart() {
+  const canvas = document.getElementById("premiumChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (billingChart) billingChart.destroy();
+
+  // Try to read counts from the recent users table first
+  let rows = Array.from(document.querySelectorAll('.recentUsersList tbody.userRow tr'));
+  if (!rows.length) {
+    // fallback to any tbody.userRow
+    rows = Array.from(document.querySelectorAll('tbody.userRow tr'));
+  }
+
+  let premiumCount = 0;
+  if (rows.length) {
+    rows.forEach(tr => {
+      const v = (tr.getAttribute('data-premium') || tr.dataset.premium || '').toString().trim().toLowerCase();
+      if (v === '1' || v === 'true' || v === 'oui' || v === 'yes') premiumCount++;
+    });
+  } else if (Array.isArray(usersData) && usersData.length) {
+    premiumCount = usersData.filter(u => u.premium === true || u.premium === '1' || u.premium === 1).length;
+  }
+
+  const freeCount = Math.max(0, (rows.length || usersData.length) - premiumCount);
+
+  billingChart = new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: ["Premium", "Gratuit"],
+      datasets: [{ data: [premiumCount, freeCount], backgroundColor: ["#f39321", "#cccccc"] }],
+    },
+    options: {
+      plugins: {
+        title: { display: true, text: "Premium vs Gratuit" },
+        legend: { position: "bottom" },
+        datalabels: {
+          color: '#111',
+          font: { weight: 'bold', size: 12 },
+          formatter: function(value, context) {
+            return value;
+          }
+        }
+      },
+    },
+    plugins: window.ChartDataLabels ? [ChartDataLabels] : []
+  });
 }
 
 function renderChart(data) {
@@ -347,531 +502,176 @@ function renderChart(data) {
       plugins: { title: { display: true, text: getDynamicTitle() } },
       scales: {
         x: { title: { display: true, text: "Date" } },
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: "Utilisateurs" },
-        },
+        y: { beginAtZero: true, title: { display: true, text: "Utilisateurs" } },
       },
     },
   });
 }
 
 // ==========================
-// CHART PREMIUM
+// CHART PREMIUM (unique)
 // ==========================
+// -------- RevenueCat: mapping produits -> libellé + type + plateforme --------
+function parseRevenueCatProduct(pid) {
+  const s = String(pid || "");
+  // Cas précis demandés
+  if (s === "rc_4999_1y") return { label: "Annuel - Apple", period: "yearly", platform: "Apple" };
+  if (s === "rc_499_1m" || s === "rc_4999_1m") return { label: "Mensuel - Apple", period: "monthly", platform: "Apple" };
+  if (s.startsWith("rc_4999_1y:") || s.startsWith("rc-4999-1y") || s.includes(":rc-4999-1y"))
+    return { label: "Annuel - Android", period: "yearly", platform: "Android" };
+  if (s.startsWith("rc_499_1m:") || s.includes(":rc_499_1m"))
+    return { label: "Mensuel - Android", period: "monthly", platform: "Android" };
 
-function renderPremiumChart(data) {
-  const canvas = document.getElementById("premiumChart");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-
-  if (billingChart) billingChart.destroy();
-
-  let labels, chartData;
-  if (isBillingMode) {
-    const filtered = data.filter((u) => u.premium === "yes");
-    const monthly = filtered.filter((u) => u.billing === "monthly").length;
-    const yearly = filtered.filter((u) => u.billing === "yearly").length;
-    labels = ["Mensuel", "Annuel"];
-    chartData = [monthly, yearly];
-  } else {
-    const yes = data.filter((u) => u.premium === "yes").length;
-    const no = data.filter((u) => u.premium === "no").length;
-    labels = ["Premium", "Gratuit"];
-    chartData = [yes, no];
-  }
-
-  billingChart = new Chart(ctx, {
-    type: "pie",
-    data: {
-      labels: labels,
-      datasets: [{ data: chartData, backgroundColor: ["#f39321", "#cccccc"] }],
-    },
-    options: {
-      plugins: {
-        title: {
-          display: true,
-          text: isBillingMode
-            ? "Répartition Mensuel vs Annuel"
-            : "Premium vs Gratuit",
-        },
-        legend: { position: "bottom" },
-      },
-    },
-  });
+  // Fallback générique si d’autres variantes apparaissent
+  const period = /1y/i.test(s) ? "yearly" : "monthly";
+  const platform = s.includes(":") ? "Android" : "Apple";
+  const label = (period === "yearly" ? "Annuel" : "Mensuel") + " - " + platform;
+  return { label, period, platform };
 }
 
 // ==========================
-// TABLEAU UTILISATEURS
+// REVENUE (unique; uniquement si éléments présents)
 // ==========================
-
-function initUserTable(data) {
-  const searchInput = document.getElementById("userSearchInput");
-  const tbody = document.querySelector(".userRow");
-  if (!tbody) return; // Protection : n'exécute rien si pas sur la page concernée
-
-  const paginationContainer =
-    document.querySelector(".recentUsersList .pagination-controls") ||
-    document.createElement("div");
-  paginationContainer.className = "pagination-controls";
-  if (!paginationContainer.parentNode)
-    document
-      .querySelector(".recentUsersList")
-      ?.appendChild(paginationContainer);
-
-  let currentPage = 1;
-  const perPage = 15;
-  let filtered = [...data];
-
-  function getTotalPages() {
-    return Math.ceil(filtered.length / perPage);
-  }
-
-  function renderPage(page) {
-    tbody.innerHTML = "";
-    const start = (page - 1) * perPage;
-    filtered.slice(start, start + perPage).forEach((user) => {
-      const tr = document.createElement("tr");
-      if (user.premium === "yes") {
-        tr.classList.add("premium");
-      }
-      // Ajoute l'écouteur de clic ici :
-      tr.style.cursor = "pointer";
-      tr.addEventListener("click", () => {
-        window.location.href = `user_controller.php?id=${encodeURIComponent(user.user_id)}`;
-      });
-
-      [
-        "user_name",
-        "user_id",
-        "blast_id",
-        "email",
-        "status",
-        "premium",
-        "billing",
-      ].forEach((key) => {
-        const td = document.createElement("td");
-        td.textContent = user[key] || "";
-        if (key === "premium" && user[key] === "yes")
-          td.classList.add("userPremium");
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-  }
-
-  function updatePagination() {
-    paginationContainer.innerHTML = `
-      <button id="prevPage" ${
-        currentPage === 1 ? "disabled" : ""
-      }>Précédent</button>
-      <span class="paginationSpan">${currentPage} / ${getTotalPages()}</span>
-      <button id="nextPage" ${
-        currentPage === getTotalPages() ? "disabled" : ""
-      }>Suivant</button>
-    `;
-    document.getElementById("prevPage").onclick = () => {
-      if (currentPage > 1) {
-        currentPage--;
-        renderPage(currentPage);
-        updatePagination();
-      }
-    };
-    document.getElementById("nextPage").onclick = () => {
-      if (currentPage < getTotalPages()) {
-        currentPage++;
-        renderPage(currentPage);
-        updatePagination();
-      }
-    };
-  }
-
-  if (searchInput) {
-    // Ajout des filtres premium/free
-    const filterPremium = document.getElementById("filterPremium");
-    const filterFree = document.getElementById("filterFree");
-
-    function applyFilters() {
-      const query = searchInput.value.trim().toLowerCase();
-      filtered = data.filter((u) => {
-        // Filtre texte
-        const matchesText =
-          u.user_name?.toLowerCase().includes(query) ||
-          u.blast_id?.toLowerCase().includes(query) ||
-          u.email?.toLowerCase().includes(query);
-
-        // Filtre premium/free
-        const isPremium = u.premium === "yes";
-        const isFree = u.premium === "no";
-        const showPremium = filterPremium?.checked;
-        const showFree = filterFree?.checked;
-
-        const matchesPremium =
-          (isPremium && showPremium) || (isFree && showFree);
-
-        return matchesText && matchesPremium;
-      });
-      currentPage = 1;
-      renderPage(currentPage);
-      updatePagination();
-    }
-
-    searchInput.addEventListener("input", applyFilters);
-    filterPremium?.addEventListener("change", applyFilters);
-    filterFree?.addEventListener("change", applyFilters);
-    applyFilters();
-  } else {
-    renderPage(currentPage);
-    updatePagination();
-  }
-}
-
-// ==========================
-// COMPTEURS / STATS
-// ==========================
-
-function updateUserCounters(users) {
-  const now = new Date();
-
-  // Périodes
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(now.getDate() - 30);
-
-  const sixtyDaysAgo = new Date();
-  sixtyDaysAgo.setDate(now.getDate() - 60);
-
-  // Nouveaux utilisateurs sur les 30 derniers jours
-  const count30 = users.filter((user) => {
-    const date = new Date(user.join_date);
-    return date >= thirtyDaysAgo && date <= now;
-  }).length;
-
-  // Nouveaux utilisateurs entre -60 et -30 jours
-  const countPrevious30 = users.filter((user) => {
-    const date = new Date(user.join_date);
-    return date >= sixtyDaysAgo && date < thirtyDaysAgo;
-  }).length;
-
-  //  Total utilisateurs
-  const countAll = users.length;
-
-  // Variation sur 30 jours glissants
-  let trendVariation = 0;
-  if (countPrevious30 === 0) {
-    trendVariation = count30 > 0 ? 100 : 0;
-  } else {
-    trendVariation = (
-      ((count30 - countPrevious30) / countPrevious30) *
-      100
-    ).toFixed(1);
-  }
-
-  // Variation mensuelle (déjà existante)
-  const stats = getUserStatsByMonth(users);
-
-  // Mise à jour du DOM
-  const userCount = document.getElementById("userCount");
-  if (userCount) userCount.textContent = countAll;
-
-  const newUsersCount = document.getElementById("newUsersCount");
-  if (newUsersCount) newUsersCount.textContent = count30;
-
-  const growthBadge = document.getElementById("userGrowthBadge");
-  if (growthBadge) {
-    growthBadge.textContent = `${stats.variation > 0 ? "+" : ""}${stats.variation}%`;
-    growthBadge.className = `badge ${
-      stats.variation > 0
-        ? "badge-positive"
-        : stats.variation < 0
-        ? "badge-negative"
-        : "badge-neutral"
-    }`;
-  }
-
-  const trendBadge = document.getElementById("userGrowthTrendBadge");
-  if (trendBadge) {
-    trendBadge.textContent = `${trendVariation > 0 ? "+" : ""}${trendVariation}%`;
-    trendBadge.classList.remove("badge-positive", "badge-negative", "badge-neutral");
-    trendBadge.classList.add(
-      trendVariation > 0
-        ? "badge-positive"
-        : trendVariation < 0
-        ? "badge-negative"
-        : "badge-neutral"
-    );
-  } else {
-    // Protection contre l'erreur : l'élément n'existe pas
-    console.warn("userGrowthTrendBadge introuvable dans le DOM");
-  }
-
-  const tooltip = document.getElementById("userGrowthTrendTooltip");
-  if (tooltip) {
-    tooltip.textContent = `One month prior : ${countPrevious30} users${countPrevious30 !== 1 ? "s" : ""}`;
-  }
-  const userGrowthTooltip = document.getElementById("userGrowthTooltip");
-  if (userGrowthTooltip) {
-    const diff = stats.currentCount - stats.previousCount;
-    const variationText = `${diff > 0 ? "+" : ""}${diff} user${Math.abs(diff) !== 1 ? "s" : ""}`;
-    userGrowthTooltip.textContent = `Last month : ${variationText}`;
-  }
-}
-
-function getUserStatsByMonth(users) {
-  const now = new Date();
-  const thisMonth = now.getMonth(),
-    thisYear = now.getFullYear();
-  const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-  const lastYear = thisMonth === 0 ? thisYear - 1 : thisYear;
-
-  let nowCount = 0,
-    beforeCount = 0;
-  users.forEach(({ join_date }) => {
-    const [y, m] = join_date.split("-").map(Number);
-    if (y < thisYear || (y === thisYear && m - 1 <= thisMonth)) nowCount++;
-    if (y < lastYear || (y === lastYear && m - 1 <= lastMonth)) beforeCount++;
-  });
-
-  const variation =
-    beforeCount === 0
-      ? nowCount > 0
-        ? 100
-        : 0
-      : (((nowCount - beforeCount) / beforeCount) * 100).toFixed(1);
-  return {
-    currentCount: nowCount,
-    previousCount: beforeCount,
-    variation: parseFloat(variation),
-  };
-}
-
-// ==========================
-// LISTENERS
-// ==========================
-
-document.getElementById("toggleCumulative")?.addEventListener("click", () => {
-  isCumulative = !isCumulative;
-  document.getElementById("toggleCumulative").textContent = isCumulative
-    ? "Désactiver le mode cumulatif"
-    : "Activer le mode cumulatif";
-  renderChart(filterDataByPeriod(currentInterval));
-});
-
-document.getElementById("toggleBillingMode")?.addEventListener("click", () => {
-  isBillingMode = !isBillingMode;
-  document.getElementById("toggleBillingMode").textContent = isBillingMode
-    ? "Afficher Premium vs Gratuit"
-    : "Afficher par facturation (premium)";
-  renderPremiumChart(usersData);
-});
-
-document.getElementById("periodSelect")?.addEventListener("change", (e) => {
-  currentInterval = e.target.value;
-  renderChart(filterDataByPeriod(currentInterval));
-});
-
-// Pour la page home
-const premiumChartHome = document.getElementById("premiumChartHome");
-const toggleBillingModeHome = document.getElementById("toggleBillingModeHome");
-
-// Pour la page sales
-const premiumChartSales = document.getElementById("premiumChartSales");
-const toggleBillingModeSales = document.getElementById("toggleBillingModeSales");
-
-function fetchAndInitSquads() {
-  fetch("http://localhost:3100/squads/list?page=1&limit=100",
-    {
-          method: "GET",
-          headers: {
-            'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
-          }
-        }
-  )
-    .then((res) =>
-      res.ok ? res.json() : Promise.reject("Erreur chargement Squads")
-    )
-    .then((data) => {
-      const squadsRaw = Array.isArray(data) ? data : data.squads;
-      // Mapping des champs
-      const squads = squadsRaw.map((s) => ({
-        squad_name: s.name,
-        squad_id: s.id,
-        game: s.gameId, // ou adapte si tu veux le nom du jeu
-        leader: s.leaderId, // ou adapte si tu veux le nom du leader
-        members: s.limit, // ou un autre champ si tu as le nombre réel de membres
-        created_date: s.createdAt ? s.createdAt.split("T")[0] : "",
-        status: s.active ? "actif" : "inactif",
+function fetchAndInitRevenue() {
+  const btnCumul = document.getElementById("toggleRevenueCumulative");
+  if (btnCumul) btnCumul.disabled = true;
+  fetch("http://localhost:3100/admin/revenuecat/transactions?page=1&limit=500")
+    .then(res => res.json())
+    .then(json => {
+      const items = json.items || json.transactions || json.data || [];
+      revenueRawData = items.map(tx => ({
+        billing_date: tx.purchasedAt ? tx.purchasedAt.split('T')[0] : '',
+        billing_type: parseRevenueCatProduct(tx.productId).period,
+        amount: typeof tx.priceEur === 'number' ? tx.priceEur
+          : (typeof tx.price_eur === 'number' ? tx.price_eur
+          : (typeof tx.price === 'number' && tx.currency === 'EUR' ? tx.price
+          : (typeof tx.priceUsd === 'number' && tx.currency === 'USD' ? tx.priceUsd * 0.92 : 0)))
       }));
-      initSquadTable(squads);
+      prepareRevenueChart(filterRevenueByPeriod(revenueRawData, currentInterval));
+      if (btnCumul) btnCumul.disabled = false;
     })
-    .catch((err) => console.error("Erreur API squads:", err));
+    .catch(err => {
+      console.error(err);
+      if (btnCumul) btnCumul.disabled = false;
+    });
 }
 
-function initSquadTable(squads) {
-  const searchInput = document.getElementById("squadSearchInput");
-  const squadRows = document.querySelector(".squadRow");
-  if (!squadRows) return; // Protection : n'exécute rien si pas sur la page concernée
-
-  const paginationContainer =
-    document.querySelector(".squadTableContainer .pagination-controls") ||
-    document.createElement("div");
-  paginationContainer.className = "pagination-controls";
-  if (!paginationContainer.parentNode) {
-    document
-      .querySelector(".squadTableContainer")
-      ?.appendChild(paginationContainer);
-  }
-
-  let currentPage = 1;
-  const perPage = 10;
-  let filtered = [...squads];
-
-  function getTotalPages() {
-    return Math.ceil(filtered.length / perPage);
-  }
-
-  function renderSquadTable(page) {
-    squadRows.innerHTML = "";
-    const start = (page - 1) * perPage;
-    const pageData = filtered.slice(start, start + perPage);
-
-    pageData.forEach((squad) => {
-      const tr = document.createElement("tr");
-      const fields = [
-        "squad_name",
-        "squad_id",
-        "game",
-        "leader",
-        "members",
-        "created_date",
-        "status",
-      ];
-      fields.forEach((key) => {
-        const td = document.createElement("td");
-        td.textContent = squad[key] || "";
-        tr.appendChild(td);
-      });
-      squadRows.appendChild(tr); // <-- AJOUTE CETTE LIGNE
-    });
-  }
-
-  function updatePagination() {
-    paginationContainer.innerHTML = `
-      <button id="prevPageSquad" ${
-        currentPage === 1 ? "disabled" : ""
-      }>Précédent</button>
-      <span class="paginationSpan">${currentPage} / ${getTotalPages()}</span>
-      <button id="nextPageSquad" ${
-        currentPage === getTotalPages() ? "disabled" : ""
-      }>Suivant</button>
-    `;
-    document.getElementById("prevPageSquad").onclick = () => {
-      if (currentPage > 1) {
-        currentPage--;
-        renderSquadTable(currentPage);
-        updatePagination();
-      }
-    };
-    document.getElementById("nextPageSquad").onclick = () => {
-      if (currentPage < getTotalPages()) {
-        currentPage++;
-        renderSquadTable(currentPage);
-        updatePagination();
-      }
-    };
-  }
-
-  if (searchInput) {
-    searchInput.addEventListener("input", () => {
-      const query = searchInput.value.trim().toLowerCase();
-      filtered = squads.filter(
-        (squad) =>
-          (squad.squad_name &&
-            squad.squad_name.toLowerCase().includes(query)) ||
-          (squad.squad_id && squad.squad_id.toLowerCase().includes(query)) ||
-          (squad.game && squad.game.toLowerCase().includes(query)) ||
-          (squad.leader && squad.leader.toLowerCase().includes(query))
-      );
-      currentPage = 1;
-      renderSquadTable(currentPage);
-      updatePagination();
-    });
-  }
-
-  renderSquadTable(currentPage);
-  updatePagination();
-}
-
-// ==========================
-// LANCEMENT
-// ==========================
-fetchAndInit();
-fetchAndInitSquads();
-
-if (document.getElementById("revenueChart")) {
-  fetchAndInitRevenue();
-  document.getElementById("periodSelect")?.addEventListener("change", (e) => {
-    currentInterval = e.target.value;
-    fetchAndInitRevenue();
+function filterRevenueByPeriod(data, period) {
+  const start = getStartDateFromPeriod(period);
+  const end = new Date();
+  return data.filter(({ billing_date }) => {
+    const d = new Date(billing_date);
+    return d >= start && d <= end;
   });
 }
 
 function prepareRevenueChart(revenueData) {
-  // Regroupe par date (jour/mois/année selon la période)
   const start = getStartDateFromPeriod(currentInterval);
   const end = new Date();
   let grouped = {};
 
   if (["1d", "7d", "1m"].includes(currentInterval)) {
-    // Par jour
     revenueData.forEach(({ billing_date, billing_type, amount }) => {
-      if (!grouped[billing_date]) {
-        grouped[billing_date] = {
-          date: billing_date,
-          monthly: 0,
-          yearly: 0,
-          total: 0,
-        };
-      }
+      if (!grouped[billing_date]) grouped[billing_date] = { date: billing_date, monthly: 0, yearly: 0, total: 0 };
       grouped[billing_date][billing_type] += amount;
       grouped[billing_date].total += amount;
     });
-    // Remplir les dates manquantes
-    const range = generateDateRange(start, end);
-    var chartData = range.map(
-      (date) => grouped[date] || { date, monthly: 0, yearly: 0, total: 0 }
-    );
+    var chartData = generateDateRange(start, end).map((date) => grouped[date] || { date, monthly: 0, yearly: 0, total: 0 });
   } else {
-    // Par mois
     revenueData.forEach(({ billing_date, billing_type, amount }) => {
       const d = new Date(billing_date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
-      if (!grouped[key]) {
-        grouped[key] = { date: key, monthly: 0, yearly: 0, total: 0 };
-      }
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (!grouped[key]) grouped[key] = { date: key, monthly: 0, yearly: 0, total: 0 };
       grouped[key][billing_type] += amount;
       grouped[key].total += amount;
     });
-    const range = generateMonthRange(start, end);
-    var chartData = range.map(
-      (month) =>
-        grouped[month] || {
-          date: month,
-          monthly: 0,
-          yearly: 0,
-          total: 0,
-        }
-    );
+    var chartData = generateMonthRange(start, end).map((month) => grouped[month] || { date: month, monthly: 0, yearly: 0, total: 0 });
   }
 
-  // Ajoute le cumulatif si activé
-  const preparedData = isRevenueCumulative
-    ? computeRevenueCumulative(chartData)
-    : chartData;
-
+  const preparedData = isRevenueCumulative ? computeRevenueCumulative(chartData) : chartData;
   renderRevenueChart(preparedData);
+  // Also render revenue split pie on sales page (monthly vs yearly totals)
+  renderRevenueSplitPie(preparedData);
+}
+
+function renderRevenueSplitPie(data) {
+  const canvas = document.getElementById('premiumChartSales');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  // Prefer explicit totals from the transactions table if available
+  // (#rcTxBody: the transactions listing below the chart). This avoids
+  // double-summing when the chart data is cumulative.
+  let monthly = 0, yearly = 0;
+  const txBody = document.getElementById('rcTxBody');
+  if (txBody) {
+    // Try to compute totals by reading the rows: product period -> monthly/yearly
+    try {
+      Array.from(txBody.querySelectorAll('tr')).forEach(tr => {
+        const prodCell = tr.children[2]; // product label cell as built in fetchAndRenderRcTx
+        const eurCell = tr.children[5]; // computed EUR amount
+        if (!prodCell) return;
+        const prodText = (prodCell.textContent || '').toLowerCase();
+        const amountText = eurCell ? (eurCell.textContent || '').replace(/[^0-9,\.\-]/g, '').replace(',', '.') : '';
+        const amount = parseFloat(amountText);
+        if (!isFinite(amount)) return;
+        if (prodText.includes('mensuel')) monthly += amount;
+        else if (prodText.includes('annuel')) yearly += amount;
+        else {
+          // fallback: if the product cell contains 'mens' or '1m' etc
+          if (/1m|mensu|mens/i.test(prodText)) monthly += amount;
+          else if (/1y|anne|annuel|year/i.test(prodText)) yearly += amount;
+          else monthly += amount; // default to monthly when unclear
+        }
+      });
+    } catch (e) {
+      console.error('Could not compute revenue split from table', e);
+      monthly = yearly = 0;
+    }
+  } else if (Array.isArray(data) && data.length) {
+    // If chart data is cumulative, use the last point to avoid double-summing
+    if (isRevenueCumulative) {
+      const last = data[data.length - 1] || { monthly: 0, yearly: 0 };
+      monthly = Number(last.monthly || 0);
+      yearly = Number(last.yearly || 0);
+    } else {
+      // Non cumulative: sum values across the dataset
+      const totals = data.reduce((acc, d) => {
+        acc.monthly += Number(d.monthly || 0);
+        acc.yearly += Number(d.yearly || 0);
+        return acc;
+      }, { monthly: 0, yearly: 0 });
+      monthly = totals.monthly;
+      yearly = totals.yearly;
+    }
+  }
+
+  // destroy previous if exists
+  if (window._revenueSplitChart) window._revenueSplitChart.destroy();
+
+  window._revenueSplitChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Mensuel', 'Annuel'],
+      datasets: [{ data: [monthly, yearly], backgroundColor: ['#f39321', '#d87b0c'] }]
+    },
+    options: {
+      plugins: {
+        title: { display: true, text: 'Répartition des revenus' },
+        legend: { position: 'bottom' },
+        datalabels: {
+          color: '#111',
+          font: { weight: 'bold', size: 12 },
+          formatter: function(val, ctx) {
+            const sum = (monthly + yearly) || 1;
+            const pct = Math.round((val / sum) * 100);
+            const amt = Math.round(val * 100) / 100;
+            return amt.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "\n(" + pct + "% )";
+          }
+        }
+      }
+    },
+    plugins: window.ChartDataLabels ? [ChartDataLabels] : []
+  });
 }
 
 function renderRevenueChart(data) {
@@ -944,7 +744,7 @@ function renderRevenueChart(data) {
         },
       },
     },
-    plugins: [ChartDataLabels],
+    plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
   });
 }
 
@@ -956,125 +756,216 @@ document.getElementById("toggleCumulative")?.addEventListener("click", () => {
   prepareRevenueChart(revenueRawData); // Utilise les données déjà chargées
 });
 
-// HOME : graphique premium
-if (document.getElementById("premiumChartHome")) {
-  let isBillingModeHome = false;
-
-  function renderPremiumChartHome(data) {
-    const canvas = document.getElementById("premiumChartHome");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (billingChart) billingChart.destroy();
-
-    let labels, chartData;
-    if (isBillingModeHome) {
-      const filtered = data.filter((u) => u.premium === "yes");
-      const monthly = filtered.filter((u) => u.billing === "monthly").length;
-      const yearly = filtered.filter((u) => u.billing === "yearly").length;
-      labels = ["Mensuel", "Annuel"];
-      chartData = [monthly, yearly];
-    } else {
-      const yes = data.filter((u) => u.premium === "yes").length;
-      const no = data.filter((u) => u.premium === "no").length;
-      labels = ["Premium", "Gratuit"];
-      chartData = [yes, no];
-    }
-
-    billingChart = new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: labels,
-        datasets: [{ data: chartData, backgroundColor: ["#f39321", "#cccccc"] }],
-      },
-      options: {
-        plugins: {
-          title: {
-            display: true,
-            text: isBillingModeHome
-              ? "Répartition Mensuel vs Annuel"
-              : "Premium vs Gratuit",
-          },
-          legend: { position: "bottom" },
-        },
-      },
-    });
-  }
-
-  // Initialisation au chargement
-  renderPremiumChartHome(usersData);
-
-  document.getElementById("toggleBillingModeHome")?.addEventListener("click", () => {
-    isBillingModeHome = !isBillingModeHome;
-    document.getElementById("toggleBillingModeHome").textContent = isBillingModeHome
-      ? "Afficher Premium vs Gratuit"
-      : "Afficher par facturation (premium)";
-    renderPremiumChartHome(usersData);
+// Helper: compute sum of the EUR column from the transaction table (if present)
+function computeTotalFromRcTable() {
+  const tbody = document.getElementById('rcTxBody');
+  if (!tbody) return null;
+  let sum = 0;
+  let parsed = 0, totalRows = 0, unparsed = 0;
+  const problematic = [];
+  Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+    totalRows++;
+    const eurCell = tr.children[5]; // matches fetchAndRenderRcTx column layout
+    if (!eurCell) { unparsed++; problematic.push({row: totalRows, reason: 'no eur cell'}); return; }
+    const txtRaw = (eurCell.textContent || '').trim();
+    const txt = txtRaw.replace(/[^0-9,\.\-]/g, '').replace(',', '.');
+    const v = parseFloat(txt);
+    if (Number.isFinite(v)) { sum += v; parsed++; }
+    else { unparsed++; problematic.push({row: totalRows, raw: txtRaw}); }
   });
+  return { sum, parsed, totalRows, unparsed, problematic };
 }
 
-// SALES : graphique premium
-if (document.getElementById("premiumChartSales")) {
-  let isBillingModeSales = false;
+if (document.getElementById("totalRevenueAllTime")) {
+  fetch("http://localhost:3100/admin/revenuecat/revenue/total")
+    .then(res => res.json())
+    .then(data => {
+      const el = document.getElementById("totalRevenueAllTime");
+      let eurTotal = null;
+      // Prefer explicit EUR total from the endpoint
+      if (data.totalRevenueEur !== undefined) eurTotal = Number(data.totalRevenueEur);
+      // Fallback: convert USD -> EUR using the page rate
+      else if (data.totalRevenueUsd !== undefined) eurTotal = Number(data.totalRevenueUsd) * getUsdToEurRate();
 
-  function renderPremiumChartSales(data) {
-    const canvas = document.getElementById("premiumChartSales");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (billingChart) billingChart.destroy();
+      if (el) {
+        el.textContent = (eurTotal != null && Number.isFinite(eurTotal)) ? fmtMoney(eurTotal, 'EUR') : 'Donnée non disponible';
+      }
 
-    let labels, chartData, chartTitle;
-    if (isBillingModeSales) {
-      const monthlyCount = data.filter((u) => u.billing_type === "monthly").length;
-      const yearlyCount = data.filter((u) => u.billing_type === "yearly").length;
-      labels = ["Mensuel", "Annuel"];
-      chartData = [monthlyCount, yearlyCount];
-      chartTitle = "Répartition des facturations (nombre)";
-    } else {
-      const monthlyRevenue = data
-        .filter((u) => u.billing_type === "monthly")
-        .reduce((sum, u) => sum + (parseFloat(u.amount) || 0), 0);
-      const yearlyRevenue = data
-        .filter((u) => u.billing_type === "yearly")
-        .reduce((sum, u) => sum + (parseFloat(u.amount) || 0), 0);
-      labels = ["Mensuel (€)", "Annuel (€)"];
-      chartData = [monthlyRevenue, yearlyRevenue];
-      chartTitle = "Répartition des revenus (€)";
-    }
-
-    billingChart = new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: labels,
-        datasets: [{ data: chartData, backgroundColor: ["#f39321", "#d87b0c"] }],
-      },
-      options: {
-        plugins: {
-          title: { display: true, text: chartTitle },
-          legend: { position: "bottom" },
-        },
-      },
-    });
-  }
-
-  // Initialisation au chargement
-  fetch("../config/salesGenerator.php")
-    .then((res) => res.ok ? res.json() : Promise.reject("Erreur fetch revenus"))
-    .then((data) => {
-      revenueRawData = data;
-      renderPremiumChartSales(filterRevenueByPeriod(revenueRawData, currentInterval));
+      // If transaction table exists, compute its total and log a comparison to help debug
+      const tableInfo = computeTotalFromRcTable();
+      if (tableInfo != null) {
+        console.info('Revenue check: endpoint EUR total=', eurTotal, 'tableSum EUR=', tableInfo.sum, tableInfo);
+        // show a small inline summary next to totalRevenueAllTime for quick visual comparison
+        const el = document.getElementById('totalRevenueAllTime');
+        if (el) {
+          let infoEl = document.getElementById('totalRevenueTableInfo');
+          if (!infoEl) {
+            infoEl = document.createElement('div');
+            infoEl.id = 'totalRevenueTableInfo';
+            infoEl.style.fontSize = '0.85em';
+            infoEl.style.color = '#666';
+            el.parentNode && el.parentNode.insertBefore(infoEl, el.nextSibling);
+          }
+          infoEl.textContent = `Table: ${fmtMoney(tableInfo.sum, 'EUR')} (${tableInfo.parsed}/${tableInfo.totalRows} lignes parsées)`;
+        }
+      }
     })
-    .catch((err) => console.error(err));
+    .catch(err => console.error('Could not fetch total revenue', err));
+}
 
-  document.getElementById("toggleBillingModeSales")?.addEventListener("click", () => {
-    isBillingModeSales = !isBillingModeSales;
-    document.getElementById("toggleBillingModeSales").textContent = isBillingModeSales
-      ? "Afficher la répartition des revenus (€)"
-      : "Afficher la répartition en nombre";
-    renderPremiumChartSales(filterRevenueByPeriod(revenueRawData, currentInterval));
+// ========= RevenueCat - Tableau des transactions =========
+
+// Taux USD -> EUR configurable (fallback 0.92). Tu peux surcharger via data-usd-eur sur #rcTxTable.
+function getUsdToEurRate() {
+  const tbl = document.getElementById("rcTxTable");
+  const v = tbl?.dataset?.usdEur;
+  const n = v ? Number(v) : NaN;
+  return Number.isFinite(n) ? n : 0.92;
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }));
+}
+
+function fmtMoney(val, cur) {
+  if (val == null || !Number.isFinite(val)) return "—";
+  try {
+    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: cur }).format(val);
+  } catch {
+    return `${val.toFixed(2)} ${cur}`;
+  }
+}
+
+function computeEuro(row) {
+  const currency = (row.currency || "").toUpperCase();
+  const price = typeof row.price === "number" ? row.price : null;
+  const priceUsd = typeof row.priceUsd === "number" ? row.priceUsd : null;
+
+  // Si déjà en EUR -> on garde le prix original
+  if (currency === "EUR" && price != null) return price;
+
+  // Sinon, on convertit depuis USD si on l’a
+  if (priceUsd != null) return priceUsd * getUsdToEurRate();
+
+  // Pas de donnée fiable
+  return null;
+}
+
+async function fetchAndRenderRcTx(page = 1, limit = 50) {
+  const tbody = document.getElementById("rcTxBody");
+  const pag   = document.getElementById("rcTxPagination");
+  if (!tbody) return;
+
+  // NOTE: ajoute 'headers' si ton endpoint exige x-api-key.
+  const res  = await fetch(`http://localhost:3100/admin/revenuecat/transactions?page=${page}&limit=${limit}`);
+  const json = await res.json();
+  const items = json.items || json.transactions || json.data || [];
+  const total = json.total ?? items.length;
+
+  tbody.innerHTML = "";
+  items.forEach(tx => {
+    const orig = (typeof tx.price === "number" && tx.currency)
+      ? fmtMoney(tx.price, tx.currency)
+      : (typeof tx.priceUsd === "number" ? fmtMoney(tx.priceUsd, "USD") : "—");
+
+    const eur = computeEuro(tx);
+    const eurStr = eur != null ? fmtMoney(eur, "EUR") : "—";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(tx.appUserId)}</td>
+      <td>${escapeHtml(tx.store)}</td>
+      <td>${escapeHtml(parseRevenueCatProduct(tx.productId).label)}</td>
+      <td>${tx.purchasedAt ? new Date(tx.purchasedAt).toLocaleString("fr-FR") : ""}</td>
+      <td>${orig}</td>
+      <td>${eurStr}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  pag.innerHTML = `
+    <button ${page <= 1 ? "disabled" : ""} id="rcPrev">Précédent</button>
+    <span class="paginationSpan">${page} / ${totalPages}</span>
+    <button ${page >= totalPages ? "disabled" : ""} id="rcNext">Suivant</button>
+  `;
+  document.getElementById("rcPrev")?.addEventListener("click", () => fetchAndRenderRcTx(page - 1, limit));
+  document.getElementById("rcNext")?.addEventListener("click", () => fetchAndRenderRcTx(page + 1, limit));
+}
+
+// Au chargement de la page sales
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById("rcTxBody")) {
+    fetchAndRenderRcTx();
+  }
+});
+
+  if (document.getElementById('transactionList')) {
+    fetch('http://localhost:3100/api/revenuecat/transactions')
+      .then(res => res.json())
+      .then(data => {
+        // Remplir la liste des transactions
+        const list = document.getElementById('transactionList');
+        list.innerHTML = '';
+        data.forEach(tx => {
+          const li = document.createElement('li');
+          li.textContent = `${tx.date} - ${tx.amount}€ - ${tx.type}`;
+          list.appendChild(li);
+        });
+      });
+  }
+;
+
+// ==========================
+// LANCEMENT GLOBAL (unique)
+// ==========================
+document.addEventListener("DOMContentLoaded", () => {
+  // tables
+  setupUserPagination();
+  initUserFilters();
+  initSquadSearch();
+
+  // data + charts
+  // Initialize currentInterval from the period select if present (keeps JS in sync with UI)
+  const periodSelectEl = document.getElementById("periodSelect");
+  if (periodSelectEl && periodSelectEl.value) {
+    currentInterval = periodSelectEl.value;
+  }
+  fetchAndInit();
+
+  // events (user chart)
+  document.getElementById("toggleCumulative")?.addEventListener("click", () => {
+    isCumulative = !isCumulative;
+    document.getElementById("toggleCumulative").textContent = isCumulative
+      ? "Désactiver le mode cumulatif"
+      : "Activer le mode cumulatif";
+    renderChart(filterDataByPeriod(currentInterval));
   });
 
   document.getElementById("periodSelect")?.addEventListener("change", (e) => {
-    currentInterval = e.target.value;
-    renderPremiumChartSales(filterRevenueByPeriod(revenueRawData, currentInterval));
+    const val = e.target.value;
+    currentInterval = val;
+    // Re-fetch/init to ensure usersData and diagnostics are up-to-date for the new period
+    fetchAndInit();
   });
-}
+
+  // revenue (only if present)
+  if (document.getElementById("revenueChart")) {
+    fetchAndInitRevenue();
+    document.getElementById("periodSelect")?.addEventListener("change", (e) => {
+      currentInterval = e.target.value;
+      prepareRevenueChart(filterRevenueByPeriod(revenueRawData, currentInterval));
+    });
+    document.getElementById('toggleRevenueCumulative')?.addEventListener('click', () => {
+  isRevenueCumulative = !isRevenueCumulative;
+  // recalcul + rerendu du graphe revenus
+  prepareRevenueChart(filterRevenueByPeriod(revenueRawData, currentInterval));
+  // maj libellé bouton
+  const b = document.getElementById('toggleRevenueCumulative');
+  if (b) b.textContent = isRevenueCumulative ? 'Désactiver le mode cumulatif' : 'Activer le mode cumulatif';
+});
+  }
+});

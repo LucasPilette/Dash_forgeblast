@@ -1,3 +1,45 @@
+/* ====== RevenueCat Table Styling ====== */
+#rcTxTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+#rcTxTable th {
+  background: #f39321;
+  color: #fff;
+  font-weight: bold;
+  padding: 10px 8px;
+  border-bottom: 2px solid #e0e0e0;
+  text-align: left;
+}
+#rcTxTable td {
+  padding: 8px 8px;
+  border-bottom: 1px solid #eee;
+  font-size: 15px;
+}
+#rcTxTable tr:nth-child(even) {
+  background: #faf6f1;
+}
+#rcTxTable tr:hover {
+  background: #ffe3b8;
+}
+#rcTxTable td:last-child, #rcTxTable th:last-child {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 15px;
+  text-align: right;
+}
+#rcTxTable td {
+  vertical-align: middle;
+}
+.card {
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  background: #fff;
+  padding: 18px 16px;
+  margin-bottom: 24px;
+}
 /******************************************* SETUP *******************************************/
 
 * {
@@ -467,6 +509,12 @@ a > img {
   justify-content: center;
   margin-top: 20px;
 }
+.user-pagination {
+  margin-bottom: 32px;
+}
+.squad-pagination {
+  margin-top: 24px;
+}
 
 tbody {
   border: 1px solid #121b20;
@@ -611,3 +659,90 @@ td {
   background: #121b20;
   color: #fff;
 }
+
+.kpiChartContainer{
+  margin-left: 280px;
+}
+
+#kpiWeeklyChart, .kpiChartHead{
+  padding: 15px;
+}
+
+.kpiChartFlexRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+.kpiChartFlexRow .kpiFlexItem {
+	flex: 1 1 50%;
+	min-width: 320px;
+	box-sizing: border-box;
+	padding: 12px;
+}
+
+.kpiChartHead {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 24px;
+  background: #fff7ef;
+  border-radius: 12px;
+  padding: 22px 28px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(243,147,33,0.08);
+  border: 1.5px solid #f39321;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.kpiChartHead h2 {
+  margin: 0 12px 0 0;
+  font-size: 1.3em;
+  color: #f39321;
+  letter-spacing: 0.5px;
+}
+
+.kpiChartHead button,
+.kpiChartHead select {
+  background: #fff;
+  color: #f39321;
+  border: 2px solid #f39321;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 1.05em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  margin-right: 8px;
+  box-shadow: 0 1px 4px rgba(243,147,33,0.08);
+}
+
+.kpiChartHead button:hover,
+.kpiChartHead select:focus {
+  background: #f39321;
+  color: #fff;
+  border-color: #f39321;
+  outline: none;
+}
+
+.kpiChartHead select {
+  min-width: 120px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 8L0.803847 0.5L11.1962 0.5L6 8Z' fill='%23f39321'/%3E%3C/svg%3E%0A");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 12px;
+  padding-right: 32px;
+}
+
+.kpiChartHead label {
+  font-weight: 600;
+  color: #121b20;
+  margin-right: 6px;
+  font-size: 1.1em;
+}
+
+.revenueDiv{display: none;}

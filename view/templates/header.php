@@ -26,8 +26,16 @@
                 <li><a href="../controller/home_controller.php"
                         class="<?php echo strpos($_SERVER['REQUEST_URI'], 'home_controller.php') !== false ? 'active' : ''; ?>">
                         <img src="../assets/src/dashSVG.svg" alt="">
-                        <span>Dashboard</span>
-                    </a></li>
+                        <span>Users / Squads</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="../controller/kpi_controller.php"
+                        class="<?php echo strpos($_SERVER['REQUEST_URI'], 'kpi_controller.php') !== false ? 'active' : ''; ?>">
+                        <img src="../assets/src/dashSVG.svg" alt="">
+                        <span>KPI</span>
+                    </a>
+                </li>
                 <li>
                     <a href="../controller/sales_controller.php"
                         class="<?php echo strpos($_SERVER['REQUEST_URI'], 'sales_controller.php') !== false ? 'active' : ''; ?>">
@@ -35,13 +43,14 @@
                         <span>Sales</span>
                     </a>
                 </li>
+
                 <!-- <li><a href="/game"><img src="../assets/src/controllerSVG.svg" alt=""><span>Game Management</span></a></li>
                 <li><a href="/user"><img src="../assets/src/headphoneSVG.svg" alt=""><span>User Support</span></a></li>
                 <li><a href="/setting"><img src="../assets/src/settingSVG.svg" alt=""><span>Setting</span></a></li> -->
             </ul>
-                    <div class="logout">
-            <a href="../controller/logout_controller.php">Déconnexion</a>
-        </div>
+            <div class="logout">
+                <a href="../controller/logout_controller.php">Déconnexion</a>
+            </div>
         </div>
 
     </div>

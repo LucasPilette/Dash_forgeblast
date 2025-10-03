@@ -17,7 +17,7 @@
                         <select id="periodSelect" class="period-select">
                             <option value="1d">Dernier jour</option>
                             <option value="7d">7 derniers jours</option>
-                            <option value="1m">Dernier mois</option>
+                            <option value="1m" selected>Dernier mois</option>
                             <option value="3m">3 derniers mois</option>
                             <option value="6m">6 derniers mois</option>
                             <option value="1y">1 an</option>
@@ -28,13 +28,32 @@
                 </div>
                 <div class="premiumRepartition">
                     <div class="premiumRepartitionHead">
-                        <h2>Répartition des revenus</h2>
-                        <button id="toggleBillingModeSales">Afficher par facturation (premium)</button>
-                    </div>
+                        <h2>Répartition des revenus</h2>                    </div>
                     <canvas id="premiumChartSales"></canvas>
                 </div>
             </div>
-            <div class="">
-                <p>Revenus des 30 derniers jours : <span id="revenueLast30Days">Chargement...</span></p>
+            <div class="revenueDiv">
+                <p>Revenus totaux : <span id="totalRevenueAllTime">Chargement...</span></p>
             </div>
+            <section class="card">
+    <h2>Transactions RevenueCat</h2>
+
+    <!-- Optionnel: fixe le taux USD→EUR via data-usd-eur (par défaut 0.92) -->
+    <table id="rcTxTable" data-usd-eur="0.92" class="table">
+        <thead>
+        <tr>
+            <th>Customer ID</th>
+            <th>Store</th>
+            <th>Product</th>
+            <th>Purchased at</th>
+            <th>Montant (origine)</th>
+            <th>Montant (€)</th>
+        </tr>
+        </thead>
+        <tbody id="rcTxBody"></tbody>
+    </table>
+
+    <div id="rcTxPagination" class="pagination-controls"></div>
+</section>
+
 </div>
