@@ -32,11 +32,18 @@ $action = $_GET['action'] ?? 'list';
 switch ($action) {
   case 'get': {
     $id = $_GET['id'] ?? '';
-    if ($id === '') jserr(400, 'Missing id');
+    $blastId = $_GET['blast_id'] ?? '';
+    if ($id === '' && $blastId === '') jserr(400, 'Missing id or blast_id');
 
-    // Requête paramétrée (évite l’injection SQL)
-    $sql = 'SELECT * FROM "User" WHERE id = $1 LIMIT 1';
-    $res = pg_query_params($dataDB, $sql, [$id]);
+    // Prefer blast_id when provided
+    if ($blastId !== '') {
+      $sql = 'SELECT * FROM "User" WHERE blast_id = $1 LIMIT 1';
+      $res = pg_query_params($dataDB, $sql, [$blastId]);
+    } else {
+      // Requête paramétrée (évite l’injection SQL)
+      $sql = 'SELECT * FROM "User" WHERE id = $1 LIMIT 1';
+      $res = pg_query_params($dataDB, $sql, [$id]);
+    }
     if (!$res) jserr(500, 'Query failed: ' . pg_last_error($dataDB));
 
     $row = pg_fetch_assoc($res);

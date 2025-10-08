@@ -36,27 +36,6 @@ if (userId) {
           <button id="editUserBtn">Modifier l'utilisateur</button>
           </div>
           `;
-          if (window.currentUserRole == "admin"){
-            userContent.innerHTML += `
-          <div class="userForm">
-          <form id="editUserForm" style="display:none; margin-top:20px;">
-            <label>Nom : <input type="text" name="name" value="${user.name}" required></label><br>
-            <label>blast ID : <input type="text" name="blastId" value="${user.blastId}" required></label><br>
-            <label>Email : <input type="email" name="email" value="${user.email}" required></label><br>
-            <label>Premium :
-              <select name="premium">
-                <option value="true" ${user.premium ? "selected" : ""}>Oui</option>
-                <option value="false" ${!user.premium ? "selected" : ""}>Non</option>
-              </select>
-            </label><br>
-            <label>Balance : <input type="number" name="balance" value="${user.balance}" step="any"></label><br>
-            <button type="submit">Enregistrer</button>
-            <button type="button" id="cancelEditUser">Annuler</button>
-          </form>
-          </div>
-        `;
-          }
-
         // Gestion du bouton d'édition
         document.getElementById("editUserBtn").onclick = function() {
           document.getElementById("editUserForm").style.display = "block";

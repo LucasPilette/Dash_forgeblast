@@ -130,7 +130,7 @@ a > img {
 
 /* CONTENT */
 
-.contentDashboard, .contentSales, .contentEditUser {
+.contentDashboard, .contentSales, .contentEditUser, .contentOverview, .container {
   margin-left: 280px;
   display: flex;
   flex-direction: column;
@@ -397,6 +397,19 @@ a > img {
   flex-direction: column;
   padding: 20px 15px;
   gap: 20px;
+}
+
+/* Overview: ensure 4-up charts fit and canvases have consistent height */
+.contentOverviewMain .overviewGraph {
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.contentOverviewMain .overviewGraph canvas {
+  width: 100% !important;
+  height: 280px !important;
+  display: block;
 }
 
 .recent > div {
@@ -746,3 +759,8 @@ td {
 }
 
 .revenueDiv{display: none;}
+
+.contentOverviewMain{
+  width: 100%;
+  display: flex;
+}

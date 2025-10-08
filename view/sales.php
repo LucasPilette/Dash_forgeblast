@@ -17,9 +17,9 @@
                         <select id="periodSelect" class="period-select">
                             <option value="1d">Dernier jour</option>
                             <option value="7d">7 derniers jours</option>
-                            <option value="1m" selected>Dernier mois</option>
+                            <option value="1m">Dernier mois</option>
                             <option value="3m">3 derniers mois</option>
-                            <option value="6m">6 derniers mois</option>
+                            <option value="6m" selected>6 derniers mois</option>
                             <option value="1y">1 an</option>
                         </select>
                     </div>

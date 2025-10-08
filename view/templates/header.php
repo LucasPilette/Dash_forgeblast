@@ -23,6 +23,12 @@
         </div>
         <div class="sideBarContent">
             <ul>
+                <li><a href="../controller/overview_controller.php"
+                        class="<?php echo strpos($_SERVER['REQUEST_URI'], 'overview_controller.php') !== false ? 'active' : ''; ?>">
+                        <img src="../assets/src/dashSVG.svg" alt="">
+                        <span>Overview</span>
+                    </a>
+                </li>
                 <li><a href="../controller/home_controller.php"
                         class="<?php echo strpos($_SERVER['REQUEST_URI'], 'home_controller.php') !== false ? 'active' : ''; ?>">
                         <img src="../assets/src/dashSVG.svg" alt="">

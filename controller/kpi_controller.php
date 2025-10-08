@@ -57,6 +57,44 @@ try {
         $weeklyUsersWithGame[] = $row;
     }
 
+    // Weekly active users: users whose lastActiveAt falls in the week and
+    // who had accounts older than 7 days at that activity time (createdAt <= lastActiveAt - 7 days)
+    $sqlActive = "
+        SELECT
+            DATE_TRUNC('week', \"lastActiveAt\") AS week_start,
+            COUNT(*) AS active_users
+        FROM \"User\"
+        WHERE \"lastActiveAt\" IS NOT NULL
+          AND \"lastActiveAt\" >= $1
+          AND \"createdAt\" <= (\"lastActiveAt\" - INTERVAL '7 days')
+        GROUP BY week_start
+        ORDER BY week_start DESC
+    ";
+    $resActive = pg_query_params($dataDB, $sqlActive, [$dateMin]);
+    if ($resActive === false) throw new RuntimeException(pg_last_error($dataDB));
+    while ($row = pg_fetch_assoc($resActive)) {
+        $weeklyActiveUsers[] = $row;
+    }
+
+    // Monthly active users: similar logic but grouped by month and using 30 days threshold
+    $sqlMonthlyActive = "
+        SELECT
+            TO_CHAR(DATE_TRUNC('month', \"lastActiveAt\"), 'YYYY-MM') AS month_start,
+            COUNT(*) AS active_users
+        FROM \"User\"
+        WHERE \"lastActiveAt\" IS NOT NULL
+          AND \"lastActiveAt\" >= $1
+          AND \"createdAt\" <= (\"lastActiveAt\" - INTERVAL '30 days')
+        GROUP BY month_start
+        ORDER BY month_start DESC
+    ";
+    $resMonthly = pg_query_params($dataDB, $sqlMonthlyActive, [$dateMin]);
+    if ($resMonthly === false) throw new RuntimeException(pg_last_error($dataDB));
+    $monthlyActiveUsers = [];
+    while ($row = pg_fetch_assoc($resMonthly)) {
+        $monthlyActiveUsers[] = $row;
+    }
+
 } catch (Throwable $e) {
     $weeklyUsers = [];
     $weeklyUsersWithGame = [];

@@ -114,7 +114,7 @@ if (!empty($users)) {
 foreach ($users as $u) {
         $name     = $u['name']      ?? '';
         $id       = $u['id']        ?? '';
-        $blastId  = $u['blast_id']  ?? '';
+    $blastId  = $u['blast_id']  ?? '';
         $email    = $u['email']     ?? '';
         $country  = $u['country']   ?? '';
         $city     = $u['city']      ?? '';
@@ -138,14 +138,16 @@ foreach ($users as $u) {
                 ? (new DateTime($u['created_at']))->format('d/m/Y')
                 : '—';
         $rowClass = $premium ? 'premium' : '';
-        $search = trim(($name.' '.$id.' '.$email));
-        echo '<tr class="'.$rowClass.'"'
-                .' data-premium="'.($premium ? 'true' : 'false').'"'
-                .' data-os="'.htmlspecialchars($os, ENT_QUOTES).'"'
-                .' data-created="'.htmlspecialchars($createdIso, ENT_QUOTES).'"'
-                .' data-search="'.htmlspecialchars($search, ENT_QUOTES).'"'
-                .' style="cursor:pointer"'
-                .' onclick="window.location.href=\'user.php?id='.htmlspecialchars($id, ENT_QUOTES).'\'">'
+    $search = trim(($name.' '.$id.' '.$email));
+    // prefer blastId for lookup; fallback to numeric id when missing
+    $targetBlast = $blastId !== '' ? $blastId : $id;
+    echo '<tr class="'.$rowClass.'"'
+        .' data-premium="'.($premium ? 'true' : 'false').'"'
+        .' data-os="'.htmlspecialchars($os, ENT_QUOTES).'"'
+        .' data-created="'.htmlspecialchars($createdIso, ENT_QUOTES).'"'
+        .' data-search="'.htmlspecialchars($search, ENT_QUOTES).'"'
+        .' style="cursor:pointer"'
+        .' onclick="window.location.href=\'user.php?blast_id='.rawurlencode($targetBlast).'&readonly=1\'">'
                         .'<td>'.htmlspecialchars($name).'</td>'
                         .'<td>'.htmlspecialchars($id).'</td>'
                         .'<td>'.htmlspecialchars($blastId).'</td>'

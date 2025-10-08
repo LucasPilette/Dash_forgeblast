@@ -38,9 +38,18 @@
 		</div>
 
 		<div class="kpiFlexItem">
+            <h2>WEEKLY ACTIVE USERS</h2>
+        <canvas id="kpiActiveUsersChart" style="max-width:100%;min-height:360px;margin-bottom:14px;"></canvas>
 		</div>
 		<div class="kpiFlexItem">
-			<!-- Division 4: Ajoutez ici le contenu souhaité -->
+            <h2>MONTHLY ACTIVE USERS</h2>
+            <canvas id="kpiMonthlyActiveChart" style="max-width:100%;min-height:360px;margin-bottom:14px;"></canvas>
+            <div class="card" style="margin-top:8px;">
+                <table id="monthlyActiveTable" style="width:100%;border-collapse:collapse;">
+                    <thead><tr><th style="text-align:left;padding:6px">Month</th><th style="text-align:right;padding:6px">Active users</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
 		</div>
 	</div>
 </div>
@@ -48,4 +57,6 @@
 // bootstrap data for external KPI script
 window.weeklyUsersData = <?php echo json_encode($weeklyUsers, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 window.weeklyUsersWithGameData = <?php echo json_encode($weeklyUsersWithGame, JSON_UNESCAPED_UNICODE); ?>;
+window.weeklyActiveUsersData = <?php echo json_encode($weeklyActiveUsers, JSON_UNESCAPED_UNICODE); ?>;
+window.monthlyActiveUsersData = <?php echo json_encode($monthlyActiveUsers ?? [], JSON_UNESCAPED_UNICODE); ?>;
 </script>
