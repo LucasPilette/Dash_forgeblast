@@ -250,13 +250,63 @@ function initSquadSearch() {
   const squadSearch = document.getElementById("squadSearchInput");
   const squadTbody = document.querySelector("tbody.squadRow");
   if (!squadSearch || !squadTbody) return;
+  
   squadSearch.addEventListener("input", () => {
     const q = squadSearch.value.trim().toLowerCase();
     Array.from(squadTbody.querySelectorAll("tr")).forEach(tr => {
       const hay = tr.getAttribute("data-search") || "";
-      tr.style.display = hay.toLowerCase().includes(q) ? "" : "none";
+      const matches = hay.toLowerCase().includes(q);
+      tr.dataset.filtered = matches ? "1" : "0";
     });
+    document.dispatchEvent(new Event("squads-table-updated"));
   });
+}
+
+// PAGINATION SQUADS (similaire à users)
+function setupSquadPagination() {
+  const squadTbody = document.querySelector("tbody.squadRow");
+  const pagContainer = document.querySelector(".squad-pagination");
+  if (!squadTbody || !pagContainer) return;
+
+  let allRows = Array.from(squadTbody.querySelectorAll("tr[data-search]"));
+  let currentPage = 1;
+  const perPage = 15;
+
+  function renderSquadPage(page) {
+    const filtered = allRows.filter(tr => tr.dataset.filtered !== "0");
+    allRows.forEach(tr => tr.style.display = "none");
+    const start = (page - 1) * perPage;
+    filtered.slice(start, start + perPage).forEach(tr => tr.style.display = "");
+  }
+
+  function updateSquadPagination() {
+    const filtered = allRows.filter(tr => tr.dataset.filtered !== "0");
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+    pagContainer.innerHTML = `
+      <button id="squadPrevPage" ${currentPage === 1 ? "disabled" : ""}>Précédent</button>
+      <span class="paginationSpan">${currentPage} / ${totalPages}</span>
+      <button id="squadNextPage" ${currentPage === totalPages ? "disabled" : ""}>Suivant</button>
+    `;
+    document.getElementById("squadPrevPage")?.addEventListener("click", () => {
+      if (currentPage > 1) { currentPage--; renderSquadPage(currentPage); updateSquadPagination(); }
+    });
+    document.getElementById("squadNextPage")?.addEventListener("click", () => {
+      const max = Math.max(1, Math.ceil(filtered.length / perPage));
+      if (currentPage < max) { currentPage++; renderSquadPage(currentPage); updateSquadPagination(); }
+    });
+  }
+
+  document.addEventListener('squads-table-updated', () => {
+    allRows = Array.from(squadTbody.querySelectorAll("tr[data-search]"));
+    currentPage = 1;
+    renderSquadPage(currentPage);
+    updateSquadPagination();
+  });
+
+  // init
+  allRows.forEach(tr => tr.dataset.filtered = "1");
+  renderSquadPage(currentPage);
+  updateSquadPagination();
 }
 
 // ==========================
@@ -932,6 +982,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupUserPagination();
   initUserFilters();
   initSquadSearch();
+  setupSquadPagination();
 
   // data + charts
   // Initialize currentInterval from the period select if present (keeps JS in sync with UI)
