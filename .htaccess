@@ -3,6 +3,21 @@ Options +FollowSymlinks
 # rewrite Apache activate
 RewriteEngine On
 
+# Security Headers
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-XSS-Protection "1; mode=block"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+# Block access to sensitive files
+<FilesMatch "^\.env">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(json|lock|md|log|sql)$">
+    Require all denied
+</FilesMatch>
+
 # /accueil -> /controller/home_controller.php
 RewriteRule ^accueil$ controller/home_controller.php [L]
 

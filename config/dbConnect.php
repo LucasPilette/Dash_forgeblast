@@ -46,7 +46,7 @@ class Database
   private function connect()
   {
     $connString = $this->buildConnectionString();
-    $conn = @pg_connect($connString);
+    $conn = pg_connect($connString);
 
     if (!$conn) {
       error_log('DB connect failed. Connection string: ' . $this->buildConnectionString(true));

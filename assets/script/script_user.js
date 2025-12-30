@@ -1,5 +1,5 @@
 
-// Récupère l’id dans l’URL
+// Récupère l'id dans l'URL
 function getUserIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
   return params.get('id');
@@ -7,10 +7,11 @@ function getUserIdFromUrl() {
 
 const userId = getUserIdFromUrl();
 if (userId) {
-  fetch(`http://127.0.0.1:3100/users/${encodeURIComponent(userId)}`, {
+  // Utilisation du proxy API pour masquer la clé API
+  fetch(`../controller/api_proxy.php?endpoint=users/${encodeURIComponent(userId)}`, {
     method: "GET",
     headers: {
-      'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
+      'Content-Type': 'application/json'
     }
   })
     .then(res => res.json())
@@ -69,10 +70,11 @@ if (userId) {
 
           const payload = { name, email, premium, balance };
 
-          fetch(`http://127.0.0.1:3100/users/${encodeURIComponent(userId)}`, {
+          // Utilisation du proxy API pour masquer la clé API
+          fetch(`../controller/api_proxy.php?endpoint=users/${encodeURIComponent(userId)}`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json",
-                      'x-api-key': 'fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b',
+            headers: { 
+              "Content-Type": "application/json"
             },
             body: JSON.stringify(payload)
           })

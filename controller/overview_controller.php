@@ -1,21 +1,6 @@
 <?php
 session_start();
 
-// Charger la config d'authentification
-require_once dirname(__FILE__) . '/../config/auth_config.php';
-
-// Vérifier l'authentification (si activée)
-if (AUTHENTICATION_ENABLED && !isset($_SESSION['user_role'])) {
-    header('Location: ../view/login.php');
-    exit;
-}
-
-// Mode développement : créer une session par défaut
-if (!AUTHENTICATION_ENABLED && !isset($_SESSION['user_role'])) {
-    $_SESSION['user_role'] = DEFAULT_ROLE;
-    $_SESSION['user_email'] = DEFAULT_EMAIL;
-}
-
 // Ouvre $dataDB (ressource pg_connect) via ton dbConnect.php
 require_once dirname(__FILE__) . '/../config/dbConnect.php';
 
@@ -139,7 +124,7 @@ try {
     // Weekly transactions: fetch RevenueCat transactions via local admin endpoint and group by week
     // This mirrors client-side fetchAndInitRevenue but runs server-side for deterministic bootstrap
     $txJson = @file_get_contents('http://localhost:3100/admin/revenuecat/transactions?page=1&limit=500');
-    if ($txJson !== false) {
+    if ($txJson !== false && $txJson !== null) {
         $txObj = json_decode($txJson, true);
         $items = $txObj['items'] ?? $txObj['transactions'] ?? $txObj['data'] ?? [];
         $group = [];

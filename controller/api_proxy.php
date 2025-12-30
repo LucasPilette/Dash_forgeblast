@@ -5,25 +5,6 @@
  * Masque la clé API côté client et ajoute une couche de sécurité
  */
 
-session_start();
-
-// Charger la config d'authentification
-require_once __DIR__ . '/../config/auth_config.php';
-
-// Vérifier l'authentification (si activée)
-if (AUTHENTICATION_ENABLED && !isset($_SESSION['user_role'])) {
-    http_response_code(401);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => 'Non authentifié']);
-    exit;
-}
-
-// Mode développement : créer une session par défaut
-if (!AUTHENTICATION_ENABLED && !isset($_SESSION['user_role'])) {
-    $_SESSION['user_role'] = DEFAULT_ROLE;
-    $_SESSION['user_email'] = DEFAULT_EMAIL;
-}
-
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/validation.php';
 
@@ -44,6 +25,7 @@ $allowedEndpoints = [
     'users/list',
     'users/get',
     'users/stats',
+    'users/',  // Pour permettre users/{id}
     'revenue/stats',
     'revenue/daily',
     'revenue/monthly',
