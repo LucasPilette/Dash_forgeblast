@@ -1,8 +1,19 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_role'])) {
+
+// Charger la config d'authentification
+require_once dirname(__FILE__) . '/../config/auth_config.php';
+
+// Vérifier l'authentification (si activée)
+if (AUTHENTICATION_ENABLED && !isset($_SESSION['user_role'])) {
     header('Location: ../view/login.php');
     exit;
+}
+
+// Mode développement : créer une session par défaut
+if (!AUTHENTICATION_ENABLED && !isset($_SESSION['user_role'])) {
+    $_SESSION['user_role'] = DEFAULT_ROLE;
+    $_SESSION['user_email'] = DEFAULT_EMAIL;
 }
 
 // Ouvre $dataDB (ressource pg_connect) via ton dbConnect.php
@@ -49,29 +60,28 @@ try {
         throw new RuntimeException('DB connection unavailable');
     }
 
-$sql = '
+    $sql = '
 SELECT
     id,
     name,
     "blastId"   AS blast_id,
     email,
     active,
-    premium::int AS premium,  -- ← 0/1 (pas t/f) pour un test fiable côté PHP
+    premium::int AS premium,
     "balance"   AS grapes,
     "country"   AS country,
     "city"      AS city,
     "createdAt" AS created_at,
     "platform"  AS platform
 FROM "User"
+WHERE email NOT LIKE $1
 ORDER BY "createdAt" DESC
-LIMIT 500
 ';
 
-
-$res = pg_query($dataDB, $sql);
-if ($res === false) {
-    throw new RuntimeException(pg_last_error($dataDB));
-}
+    $res = pg_query_params($dataDB, $sql, ['%fakeuser%']);
+    if ($res === false) {
+        throw new RuntimeException(pg_last_error($dataDB));
+    }
 
 
 
@@ -85,6 +95,6 @@ if ($res === false) {
 }
 
 // Includes inchangés (CSS chargé via ton header)
-include(dirname(__FILE__) .'/../view/templates/header.php');
-include(dirname(__FILE__) .'/../view/home.php');
-include(dirname(__FILE__) .'/../view/templates/footer.php');
+include(dirname(__FILE__) . '/../view/templates/header.php');
+include(dirname(__FILE__) . '/../view/home.php');
+include(dirname(__FILE__) . '/../view/templates/footer.php');

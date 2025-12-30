@@ -1,91 +1,151 @@
 <?php
-// dbConnect.php — crée une connexion PostgreSQL ($dataDB) utilisable par tes contrôleurs
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 
 /**
- * Construit une chaîne de connexion libpq sûre (avec quoting simple).
- * NB: libpq accepte param='valeur' ; on échappe juste les quotes simples.
+ * Classe Database avec pattern Singleton
+ * Gère une connexion PostgreSQL unique et réutilisable
  */
-function pg_conn_kv(string $k, string $v): string {
-  $v = str_replace("'", "\\'", $v);
-  return sprintf("%s='%s'", $k, $v);
-}
+class Database
+{
+  private static ?Database $instance = null;
+  private $connection = null;
 
-/** Retourne la chaîne de connexion en lisant DATABASE_URL ou les variables séparées. */
-function build_pg_conn_string(): string {
-  // 1) DATABASE_URL prioritaire
-  if (defined('DATABASE_URL') && DATABASE_URL) {
-    $u = parse_url(DATABASE_URL);
-    if ($u === false) {
-      throw new RuntimeException('DATABASE_URL invalide.');
+  /**
+   * Constructeur privé pour empêcher l'instanciation directe
+   */
+  private function __construct()
+  {
+    $this->connection = $this->connect();
+  }
+
+  /**
+   * Empêche le clonage de l'instance
+   */
+  private function __clone() {}
+
+  /**
+   * Récupère l'instance unique de Database
+   * @return Database Instance unique
+   */
+  public static function getInstance(): Database
+  {
+    if (self::$instance === null) {
+      self::$instance = new self();
     }
-    $host = $u['host'] ?? 'localhost';
-    $port = strval($u['port'] ?? 5432);
-    $db   = ltrim($u['path'] ?? '', '/');
-    $user = isset($u['user']) ? urldecode($u['user']) : '';
-    $pass = isset($u['pass']) ? urldecode($u['pass']) : '';
-    $ssl  = defined('DB_SSLMODE') ? DB_SSLMODE : 'require';
+    return self::$instance;
+  }
+
+  /**
+   * Établit la connexion à la base de données
+   * @return resource Connexion PostgreSQL
+   * @throws RuntimeException Si la connexion échoue
+   */
+  private function connect()
+  {
+    $connString = $this->buildConnectionString();
+    $conn = @pg_connect($connString);
+
+    if (!$conn) {
+      error_log('DB connect failed. Connection string: ' . $this->buildConnectionString(true));
+      throw new RuntimeException('Impossible de se connecter à la base de données');
+    }
+
+    return $conn;
+  }
+
+  /**
+   * Construit la chaîne de connexion PostgreSQL
+   * @param bool $maskPassword Masquer le mot de passe pour les logs
+   * @return string Chaîne de connexion
+   */
+  private function buildConnectionString(bool $maskPassword = false): string
+  {
+    if (defined('DATABASE_URL') && DATABASE_URL) {
+      $u = parse_url(DATABASE_URL);
+      if ($u === false) {
+        throw new RuntimeException('DATABASE_URL invalide.');
+      }
+      $host = $u['host'] ?? 'localhost';
+      $port = strval($u['port'] ?? 5432);
+      $db   = ltrim($u['path'] ?? '', '/');
+      $user = isset($u['user']) ? urldecode($u['user']) : '';
+      $pass = isset($u['pass']) ? urldecode($u['pass']) : '';
+      $ssl  = defined('DB_SSLMODE') ? DB_SSLMODE : 'require';
+    } else {
+      $host = DB_HOST;
+      $port = DB_PORT ?: '5432';
+      $db   = DB_NAME;
+      $user = DB_USER;
+      $pass = DB_PASSWORD;
+      $ssl  = DB_SSLMODE ?: 'require';
+
+      if (!$host || !$db || !$user) {
+        throw new RuntimeException('Config DB incomplète : renseigne DATABASE_URL ou DB_HOST/DB_NAME/DB_USER.');
+      }
+    }
+
+    if ($maskPassword) {
+      $pass = '***';
+    }
 
     $parts = [
-      pg_conn_kv('host', $host),
-      pg_conn_kv('port', $port),
-      pg_conn_kv('dbname', $db),
-      pg_conn_kv('user', $user),
-      pg_conn_kv('password', $pass),
-      pg_conn_kv('sslmode', $ssl),
+      $this->pgConnKv('host', $host),
+      $this->pgConnKv('port', $port),
+      $this->pgConnKv('dbname', $db),
+      $this->pgConnKv('user', $user),
+      $this->pgConnKv('password', $pass),
+      $this->pgConnKv('sslmode', $ssl),
     ];
-
-    // Si tu passes en verify-full, décommente et pointe vers le CA bundle :
-    // if (defined('DB_SSLROOTCERT') && DB_SSLROOTCERT) {
-    //   $parts[] = pg_conn_kv('sslrootcert', DB_SSLROOTCERT);
-    // }
 
     return implode(' ', $parts);
   }
 
-  // 2) Fallback : variables séparées
-  $host = DB_HOST;
-  $port = DB_PORT ?: '5432';
-  $db   = DB_NAME;
-  $user = DB_USER;
-  $pass = DB_PASSWORD;
-  $ssl  = DB_SSLMODE ?: 'require';
-
-  if (!$host || !$db || !$user) {
-    throw new RuntimeException('Config DB incomplète : renseigne DATABASE_URL ou DB_HOST/DB_NAME/DB_USER.');
+  /**
+   * Formate une paire clé-valeur pour la chaîne de connexion
+   * @param string $k Clé
+   * @param string $v Valeur
+   * @return string Paire formatée
+   */
+  private function pgConnKv(string $k, string $v): string
+  {
+    $v = str_replace("'", "\\'", $v);
+    return sprintf("%s='%s'", $k, $v);
   }
 
-  $parts = [
-    pg_conn_kv('host', $host),
-    pg_conn_kv('port', $port),
-    pg_conn_kv('dbname', $db),
-    pg_conn_kv('user', $user),
-    pg_conn_kv('password', $pass),
-    pg_conn_kv('sslmode', $ssl),
-  ];
-
-  return implode(' ', $parts);
-}
-
-/** Ouvre la connexion globale. */
-function open_pg_connection() {
-  $connString = build_pg_conn_string();
-  $conn = @pg_connect($connString);
-  if (!$conn) {
-    // Log serveur (error_log) + réponse JSON 500 utile côté front
-    error_log('DB connect failed: ' . pg_last_error());
-    if (!headers_sent()) {
-      header('Content-Type: application/json; charset=utf-8');
-      http_response_code(500);
+  /**
+   * Récupère la connexion à la base de données
+   * @return resource Connexion PostgreSQL
+   */
+  public function getConnection()
+  {
+    if (!$this->connection || pg_connection_status($this->connection) !== PGSQL_CONNECTION_OK) {
+      $this->connection = $this->connect();
     }
-    echo json_encode(['error' => 'DB connection error']);
-    exit;
+    return $this->connection;
   }
-  return $conn;
+
+  /**
+   * Vérifie si la connexion est active
+   * @return bool True si active
+   */
+  public function isConnected(): bool
+  {
+    return $this->connection && pg_connection_status($this->connection) === PGSQL_CONNECTION_OK;
+  }
+
+  /**
+   * Ferme la connexion (appelé automatiquement à la fin du script)
+   */
+  public function __destruct()
+  {
+    if ($this->connection && is_resource($this->connection)) {
+      pg_close($this->connection);
+    }
+  }
 }
 
-// --- Ouverture immédiate pour le reste de l’app ---
-$dataDB = open_pg_connection();
+// Pour compatibilité avec le code existant, on maintient la variable globale $dataDB
+$dataDB = Database::getInstance()->getConnection();

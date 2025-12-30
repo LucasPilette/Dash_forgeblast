@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ForgeBlast Dashboard - Accueil</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: #1a1a1a;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(255, 119, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            border: 1px solid #2a2a2a;
+        }
+        
+        h1 {
+            color: #ff7700;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .section {
+            margin: 30px 0;
+        }
+        
+        .section h2 {
+            color: #ff7700;
+            margin-bottom: 15px;
+        }
+        
+        .links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .btn-primary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px;
+            background: #ff7700;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #000;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+        }
+        
+        .btn-primary:hover {
+            background: #ff9933;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 119, 0, 0.4);
+        }
+        
+        .icon {
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ForgeBlast Dashboard</h1>
+        
+        <div class="section">
+            <h2>Accès rapide</h2>
+            <div class="links">
+                <a href="controller/overview_controller.php" class="btn btn-primary">
+                    <span class="icon">📈</span>
+                    <span>Overview</span>
+                </a>
+                <a href="controller/home_controller.php" class="btn btn-primary">
+                    <span class="icon">👥</span>
+                    <span>Users / Squads</span>
+                </a>
+                <a href="controller/kpi_controller.php" class="btn btn-primary">
+                    <span class="icon">📊</span>
+                    <span>KPI</span>
+                </a>
+                <a href="controller/sales_controller.php" class="btn btn-primary">
+                    <span class="icon">💰</span>
+                    <span>Sales</span>
+                </a>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

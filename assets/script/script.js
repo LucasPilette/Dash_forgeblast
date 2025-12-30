@@ -3,9 +3,10 @@
 // CONFIGURATION & VARIABLES (unique)
 // ==========================
 let currentInterval = "1m";
-let isCumulative = true;
+let isCumulative = false;
 let chart = null;
 let fullData = [];         // registrations grouped by date
+let preparedData = [];     // prepared data for current period (ready for chart)
 let usersData = [];        // normalized users array for counters/charts
 
 // Revenue (only used on sales page if elements exist)
@@ -20,11 +21,15 @@ let revenueRawData = [];
 // ==========================
 function computeCumulative(data) {
   let ios = 0, android = 0;
-  return data.map((item) => ({
-    date: item.date,
-    ios: (ios += item.ios),
-    android: (android += item.android),
-  }));
+  return data.map((item) => {
+    ios += (Number(item.ios) || 0);
+    android += (Number(item.android) || 0);
+    return {
+      date: item.date,
+      ios: ios,
+      android: android,
+    };
+  });
 }
 
 function computeRevenueCumulative(data) {
@@ -345,31 +350,8 @@ async function fetchAndInit() {
     usersData = collectUsersFromDom();
   }
 
-  // 3) Fallback API si toujours vide
-  if (!usersData.length) {
-    try {
-      const API = "http://localhost:3100/users/list";
-      const HEADERS = { method: "GET", headers: { "x-api-key": "fb_sk_live_3b7f29e1c4e14a509a8f4f97ae6aaf6b" } };
-      const res = await fetch(`${API}?page=1&limit=500`, HEADERS);
-      const json = await res.json();
-      const list = Array.isArray(json?.users) ? json.users :
-                   Array.isArray(json?.data)  ? json.data  :
-                   Array.isArray(json)        ? json       : [];
-      const normPlatform = (p) => (p || "").toString().trim().toLowerCase();
-      const toYmd = (d) => {
-        const dt = d ? new Date(d) : null;
-        return dt && !isNaN(dt) ? dt.toISOString().slice(0, 10) : "";
-      };
-      usersData = list.map(u => ({
-        createdAt: toYmd(u.createdAt),
-        os: normPlatform(u.platform),
-        premium: !!u.premium,
-      }));
-    } catch (e) {
-      console.error("Fallback API users fetch failed", e);
-      usersData = [];
-    }
-  }
+  // 3) Fallback API désactivé (données chargées via PHP)
+  // Les données sont déjà disponibles via window.usersData injecté par PHP
 
   // 4) Graph + compteurs
   prepareUserChart();
@@ -411,7 +393,8 @@ function prepareUserChart() {
     prepared = mrange.map(month => grouped[month] || { date: month, ios: 0, android: 0 });
   }
 
-  renderChart(prepared);
+  preparedData = prepared; // Store for toggle cumulative
+  renderChart(preparedData);
 }
 
 // Renders premium vs free repartition using usersData or DOM fallback
@@ -467,7 +450,10 @@ function renderChart(data) {
   const ctx = document.getElementById("userChart")?.getContext("2d");
   if (!ctx) return;
   if (chart) chart.destroy();
+  
+  console.log('[renderChart] isCumulative=', isCumulative, 'data.length=', data.length, 'data sample=', data.slice(0, 3));
   const prepared = isCumulative ? computeCumulative(data) : data;
+  console.log('[renderChart] prepared.length=', prepared.length, 'prepared sample=', prepared.slice(0, 3));
 
   chart = new Chart(ctx, {
     type: "line",
@@ -535,7 +521,7 @@ function parseRevenueCatProduct(pid) {
 function fetchAndInitRevenue() {
   const btnCumul = document.getElementById("toggleRevenueCumulative");
   if (btnCumul) btnCumul.disabled = true;
-  fetch("http://localhost:3100/admin/revenuecat/transactions?page=1&limit=500")
+  fetch("http://localhost:3100/admin/revenuecat-live/transactions?page=1&limit=500")
     .then(res => res.json())
     .then(json => {
       const items = json.items || json.transactions || json.data || [];
@@ -748,14 +734,6 @@ function renderRevenueChart(data) {
   });
 }
 
-document.getElementById("toggleCumulative")?.addEventListener("click", () => {
-  isRevenueCumulative = !isRevenueCumulative;
-  document.getElementById("toggleCumulative").textContent = isRevenueCumulative
-    ? "Désactiver le mode cumulatif"
-    : "Activer le mode cumulatif";
-  prepareRevenueChart(revenueRawData); // Utilise les données déjà chargées
-});
-
 // Helper: compute sum of the EUR column from the transaction table (if present)
 function computeTotalFromRcTable() {
   const tbody = document.getElementById('rcTxBody');
@@ -777,7 +755,7 @@ function computeTotalFromRcTable() {
 }
 
 if (document.getElementById("totalRevenueAllTime")) {
-  fetch("http://localhost:3100/admin/revenuecat/revenue/total")
+  fetch('http://localhost:3100/admin/revenuecat-live/revenue/total')
     .then(res => res.json())
     .then(data => {
       const el = document.getElementById("totalRevenueAllTime");
@@ -853,16 +831,43 @@ function computeEuro(row) {
   return null;
 }
 
-async function fetchAndRenderRcTx(page = 1, limit = 50) {
+async function fetchAndRenderRcTx(page = 1, limit = 100) {
   const tbody = document.getElementById("rcTxBody");
   const pag   = document.getElementById("rcTxPagination");
   if (!tbody) return;
 
   // NOTE: ajoute 'headers' si ton endpoint exige x-api-key.
-  const res  = await fetch(`http://localhost:3100/admin/revenuecat/transactions?page=${page}&limit=${limit}`);
+  // Sort by purchasedAt descending to show most recent first
+  const res  = await fetch(`http://localhost:3100/admin/revenuecat-live/transactions?page=${page}&limit=${limit}&sort=purchasedAt&order=desc`);
   const json = await res.json();
-  const items = json.items || json.transactions || json.data || [];
-  const total = json.total ?? items.length;
+  let items = json.items || json.transactions || json.data || [];
+  
+  console.log('[fetchAndRenderRcTx] Raw API response:', json);
+  console.log('[fetchAndRenderRcTx] Items before filtering:', items.length);
+  
+  // Filter out test transactions (user_123, user_456, etc.)
+  const filteredItems = items.filter(tx => {
+    const userId = String(tx.appUserId || '').toLowerCase();
+    // Exclude test users
+    if (userId.startsWith('user_') || userId === 'test' || userId.includes('test')) {
+      console.log('[fetchAndRenderRcTx] Filtering out test user:', userId);
+      return false;
+    }
+    return true;
+  });
+  
+  console.log('[fetchAndRenderRcTx] Items after filtering test users:', filteredItems.length);
+  
+  // Sort by purchasedAt descending if not already sorted by API
+  items = filteredItems.sort((a, b) => {
+    const dateA = new Date(a.purchasedAt || 0);
+    const dateB = new Date(b.purchasedAt || 0);
+    return dateB - dateA; // Most recent first
+  });
+  
+  console.log('[fetchAndRenderRcTx] Final items to display:', items.length, 'Sample:', items.slice(0, 5));
+  
+  const total = filteredItems.length;
 
   tbody.innerHTML = "";
   items.forEach(tx => {
@@ -940,9 +945,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("toggleCumulative")?.addEventListener("click", () => {
     isCumulative = !isCumulative;
     document.getElementById("toggleCumulative").textContent = isCumulative
-      ? "Désactiver le mode cumulatif"
-      : "Activer le mode cumulatif";
-    renderChart(filterDataByPeriod(currentInterval));
+      ? "Basculer en mode cumul"
+      : "Basculer en mode cumul";
+    renderChart(preparedData);
   });
 
   document.getElementById("periodSelect")?.addEventListener("change", (e) => {

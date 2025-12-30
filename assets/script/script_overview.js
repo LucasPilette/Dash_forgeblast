@@ -148,11 +148,14 @@
             const ctxUX = el.getContext('2d');
             try {
                 // Compute onboarded percent as onboarded_this_week / new_users_this_week (1 decimal)
+                // Only show percentage when new_users >= 5, otherwise show 0
                 const onboardedSeries = valuesFor(onboardedMap, weeks);
                 const newUsersSeriesLocal = valuesFor(newUsersMap, weeks);
                 const onboardedPct = weeks.map((_,i)=>{
                     const onboarded = Number(onboardedSeries[i] || 0);
                     const newUsers = Number(newUsersSeriesLocal[i] || 0);
+                    // Only calculate percentage if we have at least 5 new users
+                    if (newUsers < 5) return 0;
                     if (!newUsers) return 0;
                     return Math.round((onboarded / newUsers) * 1000) / 10;
                 });
@@ -173,6 +176,10 @@
                                     const pct = (ctx.parsed && ctx.parsed.y !== undefined) ? ctx.parsed.y : ctx.raw;
                                     const onboard = (typeof onboardedSeries !== 'undefined') ? (onboardedSeries[idx] || 0) : 0;
                                     const newUsers = (typeof newUsersSeriesLocal !== 'undefined') ? (newUsersSeriesLocal[idx] || 0) : 0;
+                                    // Show "N/A" in tooltip when < 5 new users
+                                    if (newUsers < 5) {
+                                        return ctx.dataset.label + ': N/A (< 5 new users)';
+                                    }
                                     return ctx.dataset.label + ': ' + pct + '% (' + onboard + ' / ' + newUsers + ')';
                                 }catch(e){ return ''; } }
                             }}
@@ -325,7 +332,7 @@
                 _chartValue = new Chart(ctxValue, {
                 type: 'line',
                 data: { labels: monthLabels, datasets:[{ label:'Tx per cumulative users (%)', data: monthlyVals, borderColor:'#9c27b0', backgroundColor:'rgba(156,39,176,0.08)', tension:0.2, pointRadius:5, pointHoverRadius:8, pointHitRadius:8 }] },
-                options: { responsive:true, maintainAspectRatio:false, interaction: { mode: 'index', intersect: false }, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ title:function(items){ try{ if(!items||!items[0]) return ''; return items[0].label; }catch(e){ return ''; } }, label:function(ctx){ try{ const idx = (typeof ctx.dataIndex === 'number') ? ctx.dataIndex : 0; const v = (ctx.parsed && ctx.parsed.y !== undefined) ? ctx.parsed.y : ctx.raw; const tx = monthlyTxCounts[idx] || 0; const cumUsers = monthlyActiveCounts[idx] || 0; return ctx.dataset.label + ': ' + v + '% (' + tx + ' tx / ' + cumUsers + ' cumulative users)'; }catch(e){ return ''; } } } } }, scales:{ x:{ display:true, ticks:{ maxRotation:0 } }, y:{ beginAtZero:true, suggestedMax:100, max:100, ticks:{ callback:function(v){ return v + '%'; } } } } }
+                options: { responsive:true, maintainAspectRatio:false, interaction: { mode: 'index', intersect: false }, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ title:function(items){ try{ if(!items||!items[0]) return ''; return items[0].label; }catch(e){ return ''; } }, label:function(ctx){ try{ const idx = (typeof ctx.dataIndex === 'number') ? ctx.dataIndex : 0; const v = (ctx.parsed && ctx.parsed.y !== undefined) ? ctx.parsed.y : ctx.raw; const tx = monthlyTxCounts[idx] || 0; const cumUsers = monthlyActiveCounts[idx] || 0; return ctx.dataset.label + ': ' + v + '% (' + tx + ' tx / ' + cumUsers + ' cumulative users)'; }catch(e){ return ''; } } } } }, scales:{ x:{ display:true, ticks:{ maxRotation:0 } }, y:{ beginAtZero:true, suggestedMax:30, max:30, ticks:{ callback:function(v){ return v + '%'; } } } } }
             });
         } catch (e) { console.error('Value chart error', e); }
     })();

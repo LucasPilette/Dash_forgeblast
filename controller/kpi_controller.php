@@ -1,8 +1,19 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_role'])) {
+
+// Charger la config d'authentification
+require_once dirname(__FILE__) . '/../config/auth_config.php';
+
+// Vérifier l'authentification (si activée)
+if (AUTHENTICATION_ENABLED && !isset($_SESSION['user_role'])) {
     header('Location: ../view/login.php');
     exit;
+}
+
+// Mode développement : créer une session par défaut
+if (!AUTHENTICATION_ENABLED && !isset($_SESSION['user_role'])) {
+    $_SESSION['user_role'] = DEFAULT_ROLE;
+    $_SESSION['user_email'] = DEFAULT_EMAIL;
 }
 
 
@@ -32,6 +43,7 @@ try {
             COUNT(*) AS new_users
         FROM \"User\"
         WHERE \"createdAt\" >= $1
+          AND email NOT LIKE '%fakeuser%'
         GROUP BY week_start
         ORDER BY week_start DESC
     ";
@@ -48,6 +60,7 @@ try {
         FROM \"User\"
         WHERE \"createdAt\" >= $1
           AND \"currentGameId\" IS NOT NULL
+          AND email NOT LIKE '%fakeuser%'
         GROUP BY week_start
         ORDER BY week_start DESC
     ";
@@ -66,7 +79,7 @@ try {
         FROM \"User\"
         WHERE \"lastActiveAt\" IS NOT NULL
           AND \"lastActiveAt\" >= $1
-          AND \"createdAt\" <= (\"lastActiveAt\" - INTERVAL '7 days')
+          AND email NOT LIKE '%fakeuser%'
         GROUP BY week_start
         ORDER BY week_start DESC
     ";
@@ -84,7 +97,7 @@ try {
         FROM \"User\"
         WHERE \"lastActiveAt\" IS NOT NULL
           AND \"lastActiveAt\" >= $1
-          AND \"createdAt\" <= (\"lastActiveAt\" - INTERVAL '30 days')
+          AND email NOT LIKE '%fakeuser%'
         GROUP BY month_start
         ORDER BY month_start DESC
     ";
@@ -94,13 +107,12 @@ try {
     while ($row = pg_fetch_assoc($resMonthly)) {
         $monthlyActiveUsers[] = $row;
     }
-
 } catch (Throwable $e) {
     $weeklyUsers = [];
     $weeklyUsersWithGame = [];
 }
 
 // Includes inchangés (CSS chargé via ton header)
-include(dirname(__FILE__) .'/../view/templates/header.php');
-include(dirname(__FILE__) .'/../view/kpi.php');
-include(dirname(__FILE__) .'/../view/templates/footer.php');
+include(dirname(__FILE__) . '/../view/templates/header.php');
+include(dirname(__FILE__) . '/../view/kpi.php');
+include(dirname(__FILE__) . '/../view/templates/footer.php');
