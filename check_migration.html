@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>✅ Checklist de vérification - Migration API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            padding: 12px;
+            margin: 10px 0;
+            border-left: 4px solid #95a5a6;
+            background: #ecf0f1;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .test-item:hover { background: #d5dbdc; }
+        .test-item.pass { border-left-color: #27ae60; background: #d5f4e6; }
+        .test-item.fail { border-left-color: #e74c3c; background: #fadbd8; }
+        .checkbox { margin-right: 10px; }
+        .url { 
+            display: inline-block;
+            background: #34495e;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 5px 0;
+        }
+        .status {
+            float: right;
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+        .status.pending { background: #f39c12; color: white; }
+        .status.ok { background: #27ae60; color: white; }
+        .status.error { background: #e74c3c; color: white; }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #2980b9; }
+        button.danger { background: #e74c3c; }
+        button.danger:hover { background: #c0392b; }
+        button.success { background: #27ae60; }
+        button.success:hover { background: #229954; }
+        .summary {
+            background: #3498db;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .summary h3 { margin: 0 0 10px 0; }
+        .progress {
+            background: rgba(255,255,255,0.3);
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            background: #27ae60;
+            height: 100%;
+            transition: width 0.3s;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+        }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>✅ Checklist de vérification - Migration API</h1>
+    
+    <div class="summary">
+        <h3>Progression de la vérification</h3>
+        <div class="progress">
+            <div class="progress-bar" id="progressBar" style="width: 0%">0%</div>
+        </div>
+        <p id="progressText">0 / 15 tests validés</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 1. Vérifications de base</h2>
+        
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>L'API NestJS est démarrée</strong>
+            <span class="status pending">À tester</span>
+            <div class="url">http://127.0.0.1:3100</div>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Ouvrez ce lien - devrait afficher "Cannot GET /" (normal) ou une page de l'API
+            </p>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>Les variables d'environnement sont configurées</strong>
+            <span class="status pending">À tester</span>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Vérifiez que .env contient API_BASE et API_KEY
+            </p>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>Le script de test passe tous les tests</strong>
+            <span class="status pending">À tester</span>
+            <div class="url">
+                <a href="test_api.php" target="_blank" style="color: white;">test_api.php</a>
+            </div>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Tous les tests doivent être verts ✅
+            </p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🏠 2. Page d'accueil (Home)</h2>
+        
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>La page d'accueil s'affiche sans erreur</strong>
+            <span class="status pending">À tester</span>
+            <div class="url">
+                <a href="../" target="_blank" style="color: white;">Ouvrir le dashboard</a>
+            </div>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>Les utilisateurs s'affichent dans le tableau</strong>
+            <span class="status pending">À tester</span>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Vérifiez que vous voyez des utilisateurs (sans les fakeuser)
+            </p>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>Les squads s'affichent correctement</strong>
+            <span class="status pending">À tester</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>👤 3. Gestion des utilisateurs</h2>
+        
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>L'API utilisateurs retourne des données</strong>
+            <span class="status pending">À tester</span>
+            <div class="url">
+                <a href="controller/user_controller.php?action=list" target="_blank" style="color: white;">
+                    user_controller.php?action=list
+                </a>
+            </div>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Devrait retourner un JSON avec { "items": [...], "total": ... }
+            </p>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>La page détail utilisateur fonctionne</strong>
+            <span class="status pending">À tester</span>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Cliquez sur un utilisateur dans le dashboard - ses détails doivent s'afficher
+            </p>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>La recherche d'utilisateur fonctionne</strong>
+            <span class="status pending">À tester</span>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Si vous avez une barre de recherche, testez-la
+            </p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 4. KPI Controller</h2>
+        
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>La page KPI s'affiche sans erreur</strong>
+            <span class="status pending">À tester</span>
+            <div class="url">
+                <a href="controller/kpi_controller.php" target="_blank" style="color: white;">
+                    kpi_controller.php
+                </a>
+            </div>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>Les graphiques KPI s'affichent</strong>
+            <span class="status pending">À tester</span>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Vérifiez que vous voyez les graphiques d'utilisateurs
+            </p>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>Les filtres de période fonctionnent (1m, 3m, 6m, 1y)</strong>
+            <span class="status pending">À tester</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📈 5. Overview Controller</h2>
+        
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>La page Overview s'affiche sans erreur</strong>
+            <span class="status pending">À tester</span>
+            <div class="url">
+                <a href="controller/overview_controller.php" target="_blank" style="color: white;">
+                    overview_controller.php
+                </a>
+            </div>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>Les statistiques s'affichent</strong>
+            <span class="status pending">À tester</span>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Nouveaux utilisateurs, onboarding, utilisateurs actifs, etc.
+            </p>
+        </div>
+
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>Les transactions RevenueCat s'affichent</strong>
+            <span class="status pending">À tester</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>⚠️ 6. Vérifications des erreurs</h2>
+        
+        <div class="test-item" onclick="toggleTest(this)">
+            <input type="checkbox" class="checkbox">
+            <strong>Aucune erreur dans la console du navigateur</strong>
+            <span class="status pending">À tester</span>
+            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                Ouvrez la console (F12) et vérifiez qu'il n'y a pas d'erreurs rouges
+            </p>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <button class="success" onclick="window.location.href='../test_api.php'">
+            🧪 Lancer le test API complet
+        </button>
+        <button onclick="window.location.href='../'">
+            🏠 Ouvrir le Dashboard
+        </button>
+    </div>
+
+    <div class="test-section" style="background: #d5f4e6; border-left: 4px solid #27ae60;">
+        <h2>✅ Tout fonctionne ?</h2>
+        <p><strong>Si tous les tests sont validés :</strong></p>
+        <ol>
+            <li>Vous pouvez supprimer les fichiers de sauvegarde (*_sql.php, *_api.php)</li>
+            <li>Utilisez le script de nettoyage : <code>./cleanup.sh</code></li>
+            <li>Vous pouvez désactiver dbConnect.php si vous n'en avez plus besoin</li>
+        </ol>
+    </div>
+
+    <div class="test-section" style="background: #fadbd8; border-left: 4px solid #e74c3c;">
+        <h2>❌ Quelque chose ne fonctionne pas ?</h2>
+        <p><strong>Options de dépannage :</strong></p>
+        <ol>
+            <li>Vérifiez les logs PHP : <code>tail -f /chemin/vers/error.log</code></li>
+            <li>Vérifiez que l'API est bien démarrée sur le port 3100</li>
+            <li>Testez l'API directement : <code>curl http://127.0.0.1:3100/users/count</code></li>
+            <li>En dernier recours : <code>./migrate.sh</code> puis option 5 (ROLLBACK)</li>
+        </ol>
+    </div>
+
+    <script>
+        let checkedCount = 0;
+        const totalTests = document.querySelectorAll('.test-item').length;
+
+        function toggleTest(element) {
+            const checkbox = element.querySelector('.checkbox');
+            const status = element.querySelector('.status');
+            
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                element.classList.add('pass');
+                status.textContent = '✅ OK';
+                status.className = 'status ok';
+                checkedCount++;
+            } else {
+                element.classList.remove('pass');
+                status.textContent = 'À tester';
+                status.className = 'status pending';
+                checkedCount--;
+            }
+            
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const percentage = Math.round((checkedCount / totalTests) * 100);
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressBar').textContent = percentage + '%';
+            document.getElementById('progressText').textContent = 
+                checkedCount + ' / ' + totalTests + ' tests validés';
+        }
+
+        // Charger l'état depuis localStorage
+        window.addEventListener('load', function() {
+            const saved = localStorage.getItem('migrationChecklist');
+            if (saved) {
+                const states = JSON.parse(saved);
+                const items = document.querySelectorAll('.test-item');
+                states.forEach((checked, index) => {
+                    if (checked && items[index]) {
+                        items[index].querySelector('.checkbox').checked = true;
+                        items[index].classList.add('pass');
+                        items[index].querySelector('.status').textContent = '✅ OK';
+                        items[index].querySelector('.status').className = 'status ok';
+                        checkedCount++;
+                    }
+                });
+                updateProgress();
+            }
+        });
+
+        // Sauvegarder l'état dans localStorage
+        window.addEventListener('beforeunload', function() {
+            const states = [];
+            document.querySelectorAll('.test-item .checkbox').forEach(cb => {
+                states.push(cb.checked);
+            });
+            localStorage.setItem('migrationChecklist', JSON.stringify(states));
+        });
+    </script>
+</body>
+</html>

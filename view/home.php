@@ -1,11 +1,5 @@
 <script>
-window.usersData = <?php echo json_encode($users, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
-document.addEventListener('DOMContentLoaded', function() {
-  if (window.usersData && Array.isArray(window.usersData)) {
-    updateUserCounters(window.usersData);
-    prepareUserChart();
-  }
-});
+    window.usersData = <?php echo json_encode($users, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 </script>
 <div class="main">
     <div class="contentDashboard">
@@ -26,10 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="userAmount">
                         <p id="userCount"></p>
                     </div>
-                    <div class="badge-wrapper">
-                        <div id="userGrowthBadge" class="badge badge-neutral">0%</div>
-                        <div id="userGrowthTooltip" class="tooltip"></div>
-                    </div>
+                    <div id="userGrowthBadge" class="badge badge-neutral">0%</div>
                 </div>
                 <div class="contentUserItem">
                     <div class="itemTitle">
@@ -38,10 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="userAmount">
                         <p id="newUsersCount"></p>
                     </div>
-                    <div class="badge-wrapper">
-                        <div id="userGrowthTrendBadge" class="badge badge-neutral">+0%</div>
-                        <div id="userGrowthTrendTooltip" class="tooltip"></div>
-                    </div>
+                    <div id="userGrowthTrendBadge" class="badge badge-neutral">+0%</div>
                 </div>
             </div>
             <div class="charts">
@@ -92,172 +80,198 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
 
                         <table>
-                        <thead>
-                        <tr>
-                            <th>User Name</th>
-                            <th>User ID</th>
-                            <th>BlastID</th>
-                            <th>Email</th>
-                            <th>Join Date</th>  <!-- (remplace "Status") -->
-                            <th>Premium</th>    <!-- ✅ nouvelle colonne, avant Grapes -->
-                            <th>Grapes</th>
-                            <th>Pays</th>       <!-- (remplace "Billing") -->
-                            <th>Ville</th>
-                            <th>Platform</th>      <!-- nouvelle -->
-                        </tr>
-                        </thead>
+                            <thead>
+                                <tr>
+                                    <th>User Name</th>
+                                    <th>User ID</th>
+                                    <th>BlastID</th>
+                                    <th>Email</th>
+                                    <th>Join Date</th> <!-- (remplace "Status") -->
+                                    <th>Premium</th> <!-- ✅ nouvelle colonne, avant Grapes -->
+                                    <th>Grapes</th>
+                                    <th>Pays</th> <!-- (remplace "Billing") -->
+                                    <th>Ville</th>
+                                    <th>Platform</th> <!-- nouvelle -->
+                                </tr>
+                            </thead>
 
-<tbody class="userRow">
-<?php
-$e = fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
-if (!empty($users)) {
-foreach ($users as $u) {
-        $name     = $u['name']      ?? '';
-        $id       = $u['id']        ?? '';
-    $blastId  = $u['blast_id']  ?? '';
-        $email    = $u['email']     ?? '';
-        $country  = $u['country']   ?? '';
-        $city     = $u['city']      ?? '';
-        $premium  = !empty($u['premium']);
-        $grapes   = (int)($u['grapes'] ?? 0);
-        $platform = $u['platform']  ?? '';
-        $os = strtolower((string)($u['platform'] ?? ''));
-        if ($os !== 'ios' && $os !== 'android') {
-                $os = 'unknown';
-        }
-        $createdIso = '';
-                if (!empty($u['createdAt'])) {
-                        if ($u['createdAt'] instanceof DateTimeInterface) {
-                                $createdIso = $u['createdAt']->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d');
-                        } else {
-                                $ts = strtotime((string)$u['createdAt']);
-                                if ($ts) $createdIso = gmdate('Y-m-d', $ts);
-                        }
-                }
-        $joinDate = !empty($u['created_at'])
-                ? (new DateTime($u['created_at']))->format('d/m/Y')
-                : '—';
-        $rowClass = $premium ? 'premium' : '';
-    $search = trim(($name.' '.$id.' '.$email));
-    // prefer blastId for lookup; fallback to numeric id when missing
-    $targetBlast = $blastId !== '' ? $blastId : $id;
-    echo '<tr class="'.$rowClass.'"'
-        .' data-premium="'.($premium ? 'true' : 'false').'"'
-        .' data-os="'.htmlspecialchars($os, ENT_QUOTES).'"'
-        .' data-created="'.htmlspecialchars($createdIso, ENT_QUOTES).'"'
-        .' data-search="'.htmlspecialchars($search, ENT_QUOTES).'"'
-        .' style="cursor:pointer"'
-        .' onclick="window.location.href=\'user.php?blast_id='.rawurlencode($targetBlast).'&readonly=1\'">'
-                        .'<td>'.htmlspecialchars($name).'</td>'
-                        .'<td>'.htmlspecialchars($id).'</td>'
-                        .'<td>'.htmlspecialchars($blastId).'</td>'
-                        .'<td>'.htmlspecialchars($email).'</td>'
-                        .'<td>'.$joinDate.'</td>'
-                        .'<td>'.($premium ? 'oui' : 'non').'</td>'
-                        .'<td>'.$grapes.'</td>'
-                        .'<td>'.htmlspecialchars($country ?: '—').'</td>'
-                        .'<td>'.htmlspecialchars($city ?: '—').'</td>'
-                        .'<td>'.htmlspecialchars($platform ?: '—').'</td>'
-                .'</tr>';
-}
-} else {
-    echo '<tr><td colspan="9" class="muted">Aucun utilisateur trouvé.</td></tr>';
-}
-?>
-</tbody>
+                            <tbody class="userRow">
+                                <?php
+                                $e = fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
+                                if (!empty($users)) {
+                                    foreach ($users as $u) {
+                                        $name     = $u['name']      ?? '';
+                                        $id       = $u['id']        ?? '';
+                                        $blastId  = $u['blast_id']  ?? '';
+                                        $email    = $u['email']     ?? '';
+                                        $country  = $u['country']   ?? '';
+                                        $city     = $u['city']      ?? '';
+                                        $premium  = !empty($u['premium']);
+                                        $grapes   = (int)($u['grapes'] ?? 0);
+                                        $platform = $u['platform']  ?? '';
+                                        $os = strtolower((string)($u['platform'] ?? ''));
+                                        if ($os !== 'ios' && $os !== 'android') {
+                                            $os = 'unknown';
+                                        }
+                                        $createdIso = '';
+                                        if (!empty($u['createdAt'])) {
+                                            if ($u['createdAt'] instanceof DateTimeInterface) {
+                                                $createdIso = $u['createdAt']->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d');
+                                            } else {
+                                                $ts = strtotime((string)$u['createdAt']);
+                                                if ($ts) $createdIso = gmdate('Y-m-d', $ts);
+                                            }
+                                        }
+                                        $joinDate = !empty($u['created_at'])
+                                            ? (new DateTime($u['created_at']))->format('d/m/Y')
+                                            : '—';
+                                        $rowClass = $premium ? 'premium' : '';
+                                        $search = trim(($name . ' ' . $id . ' ' . $email));
+                                        // prefer blastId for lookup; fallback to numeric id when missing
+                                        $targetBlast = $blastId !== '' ? $blastId : $id;
+                                        $userData = json_encode($u, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                                        echo '<tr class="' . $rowClass . '"'
+                                            . ' data-premium="' . ($premium ? 'true' : 'false') . '"'
+                                            . ' data-os="' . htmlspecialchars($os, ENT_QUOTES) . '"'
+                                            . ' data-created="' . htmlspecialchars($createdIso, ENT_QUOTES) . '"'
+                                            . ' data-search="' . htmlspecialchars($search, ENT_QUOTES) . '"'
+                                            . ' data-user="' . htmlspecialchars($userData, ENT_QUOTES) . '"'
+                                            . ' style="cursor:pointer"'
+                                            . ' onclick="openUserModal(this.dataset.user)">'
+                                            . '<td>' . htmlspecialchars($name) . '</td>'
+                                            . '<td>' . htmlspecialchars($id) . '</td>'
+                                            . '<td>' . htmlspecialchars($blastId) . '</td>'
+                                            . '<td>' . htmlspecialchars($email) . '</td>'
+                                            . '<td>' . $joinDate . '</td>'
+                                            . '<td>' . ($premium ? 'oui' : 'non') . '</td>'
+                                            . '<td>' . $grapes . '</td>'
+                                            . '<td>' . htmlspecialchars($country ?: '—') . '</td>'
+                                            . '<td>' . htmlspecialchars($city ?: '—') . '</td>'
+                                            . '<td>' . htmlspecialchars($platform ?: '—') . '</td>'
+                                            . '</tr>';
+                                    }
+                                } else {
+                                    echo '<tr><td colspan="9" class="muted">Aucun utilisateur trouvé.</td></tr>';
+                                }
+                                ?>
+                            </tbody>
                             </tbody>
                         </table>
-<div class="pagination-controls user-pagination"></div>
+                        <div class="pagination-controls user-pagination"></div>
 
-<!-- ===== Squads ===== -->
-<div class="contentUserItem" style="margin-top:24px;">
-    <div class="itemTitle">
-        <h3>Squads</h3>
-    </div>
-    <div class="search-bar-container" style="text-align:right; margin-bottom:10px;">
-        <input type="text" id="squadSearchInput" placeholder="Rechercher une squad"
-                     style="padding:6px; min-width:220px;">
-    </div>
-    <div class="recentUsersList">
-        <div class="tableScrollX">
-            <table class="squadsTable">
-                <colgroup>
-                    <col style="width:20%">  <!-- Nom -->
-                    <col style="width:26%">  <!-- ID (UUID long) -->
-                    <col style="width:14%">  <!-- Leader -->
-                    <col style="width:10%">  <!-- Créée le -->
-                    <col style="width:12%">  <!-- But -->
-                    <col style="width:10%">  <!-- Ville -->
-                    <col style="width:8%">   <!-- Jeu -->
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th>Nom</th>
-                        <th>ID</th>
-                        <th>Leader</th>
-                        <th>Créée le</th>
-                        <th>But</th>
-                        <th>Ville</th>
-                        <th>Jeu</th>
-                    </tr>
-                </thead>
-                <tbody class="squadRow">
-                <?php
-                    $e = fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
-                    if (!empty($squads)) {
-                        foreach ($squads as $s) {
-                            $name       = $s['name']        ?? '';
-                            $id         = $s['id']          ?? '';
-                            $leaderName = $s['leader_name'] ?? '';
-                            $leaderId   = $s['leaderId']    ?? '';
-                            $goal       = $s['goal']        ?? '';
-                            $city       = $s['city']        ?? '';
-                            $createdDisp = '—';
-                            if (!empty($s['createdAt'])) {
-                                try {
-                                    $dt = new DateTime((string)$s['createdAt']);
-                                    $createdDisp = $dt->format('d/m/Y');
-                                } catch (Throwable $__) { /* laisse "—" */ }
-                            }
-                            $gameLabel = '';
-                            if (!empty($s['game_description'])) {
-                                    $gameLabel = (string)$s['game_description'];
-                            } elseif (!empty($s['gameId'])) {
-                                    $gameLabel = (string)$s['gameId'];
-                            }
-                            $search = trim("$name $id $leaderName $leaderId $goal $city $gameLabel");
-                            echo '<tr data-search="'.$e($search).'">'
-                                 .   '<td class="cell-wrap"              title="'.$e($name).'">'.$e($name).'</td>'
-                                 .   '<td class="cell-wrap cell-mono"     title="'.$e($id).'">'.$e($id).'</td>'
-                                 .   '<td class="cell-wrap"               title="'.$e($leaderName ?: $leaderId).'">'
-                                 .        ($leaderName !== '' ? $e($leaderName) : '—')
-                                 .     '</td>'
-                                 .   '<td class="cell-nowrap"             title="'.$e($s['createdAt'] ?? '').'">'.$e($createdDisp).'</td>'
-                                 .   '<td class="cell-wrap"               title="'.$e($goal).'">'.$e($goal).'</td>'
-                                 .   '<td class="cell-wrap"               title="'.$e($city).'">'.$e($city).'</td>'
-                                 .   '<td class="cell-wrap"               title="'.$e($gameLabel).'">'.$e($gameLabel).'</td>'
-                                 . '</tr>';
-                        }
-                    } else {
-                        echo '<tr><td colspan="7" style="text-align:center;color:#888;">Aucune squad</td></tr>';
-                    }
-                ?>
-                </tbody>
-            </table>
-        </div>
-        <div class="pagination-controls squad-pagination"></div>
-    </div>
-</div>
+                        <!-- ===== Squads ===== -->
+                        <div class="contentUserItem" style="margin-top:24px;">
+                            <div class="itemTitle">
+                                <h3>Squads</h3>
+                            </div>
+                            <div class="search-bar-container" style="text-align:right; margin-bottom:10px;">
+                                <input type="text" id="squadSearchInput" placeholder="Rechercher une squad"
+                                    style="padding:6px; min-width:220px;">
+                            </div>
+                            <div class="recentUsersList">
+                                <div class="tableScrollX">
+                                    <table class="squadsTable">
+                                        <colgroup>
+                                            <col style="width:20%"> <!-- Nom -->
+                                            <col style="width:26%"> <!-- ID (UUID long) -->
+                                            <col style="width:14%"> <!-- Leader -->
+                                            <col style="width:10%"> <!-- Créée le -->
+                                            <col style="width:12%"> <!-- But -->
+                                            <col style="width:10%"> <!-- Ville -->
+                                            <col style="width:8%"> <!-- Jeu -->
+                                        </colgroup>
+                                        <thead>
+                                            <tr>
+                                                <th>Nom</th>
+                                                <th>ID</th>
+                                                <th>Leader</th>
+                                                <th>Créée le</th>
+                                                <th>But</th>
+                                                <th>Ville</th>
+                                                <th>Jeu</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="squadRow">
+                                            <?php
+                                            $e = fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
+                                            if (!empty($squads)) {
+                                                foreach ($squads as $s) {
+                                                    $name       = $s['name']        ?? '';
+                                                    $id         = $s['id']          ?? '';
+                                                    $leaderName = $s['leader_name'] ?? '';
+                                                    $leaderId   = $s['leaderId']    ?? '';
+                                                    $goal       = $s['goal']        ?? '';
+                                                    $city       = $s['city']        ?? '';
+                                                    $createdDisp = '—';
+                                                    if (!empty($s['createdAt'])) {
+                                                        try {
+                                                            $dt = new DateTime((string)$s['createdAt']);
+                                                            $createdDisp = $dt->format('d/m/Y');
+                                                        } catch (Throwable $__) { /* laisse "—" */
+                                                        }
+                                                    }
+                                                    $gameLabel = '';
+                                                    if (!empty($s['game_description'])) {
+                                                        $gameLabel = (string)$s['game_description'];
+                                                    } elseif (!empty($s['gameId'])) {
+                                                        $gameLabel = (string)$s['gameId'];
+                                                    }
+                                                    $search = trim("$name $id $leaderName $leaderId $goal $city $gameLabel");
+                                                    $squadData = json_encode($s, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                                                    echo '<tr data-search="' . $e($search) . '" data-squad="' . htmlspecialchars($squadData, ENT_QUOTES) . '" style="cursor:pointer" onclick="openSquadModal(this.dataset.squad)">'
+                                                        .   '<td class="cell-wrap"              title="' . $e($name) . '">' . $e($name) . '</td>'
+                                                        .   '<td class="cell-wrap cell-mono"     title="' . $e($id) . '">' . $e($id) . '</td>'
+                                                        .   '<td class="cell-wrap"               title="' . $e($leaderName ?: $leaderId) . '">'
+                                                        .        ($leaderName !== '' ? $e($leaderName) : '—')
+                                                        .     '</td>'
+                                                        .   '<td class="cell-nowrap"             title="' . $e($s['createdAt'] ?? '') . '">' . $e($createdDisp) . '</td>'
+                                                        .   '<td class="cell-wrap"               title="' . $e($goal) . '">' . $e($goal) . '</td>'
+                                                        .   '<td class="cell-wrap"               title="' . $e($city) . '">' . $e($city) . '</td>'
+                                                        .   '<td class="cell-wrap"               title="' . $e($gameLabel) . '">' . $e($gameLabel) . '</td>'
+                                                        . '</tr>';
+                                                }
+                                            } else {
+                                                echo '<tr><td colspan="7" style="text-align:center;color:#888;">Aucune squad</td></tr>';
+                                            }
+                                            ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="pagination-controls squad-pagination"></div>
+                            </div>
+                        </div>
 
-<!-- Styles ciblés (non intrusifs) -->
-<style>
-  .tableScrollX { overflow-x: auto; }
-  .squadsTable { width: 100%; table-layout: fixed; border-collapse: collapse; }
-  .squadsTable th, .squadsTable td { padding: 8px 10px; vertical-align: middle; }
-  .cell-wrap   { word-break: break-word; }
-  .cell-nowrap { white-space: nowrap; }
-  .cell-mono   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
-</style>
+                        <!-- Styles ciblés (non intrusifs) -->
+                        <style>
+                            .tableScrollX {
+                                overflow-x: auto;
+                            }
+
+                            .squadsTable {
+                                width: 100%;
+                                table-layout: fixed;
+                                border-collapse: collapse;
+                            }
+
+                            .squadsTable th,
+                            .squadsTable td {
+                                padding: 8px 10px;
+                                vertical-align: middle;
+                            }
+
+                            .cell-wrap {
+                                word-break: break-word;
+                            }
+
+                            .cell-nowrap {
+                                white-space: nowrap;
+                            }
+
+                            .cell-mono {
+                                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                                font-size: 12px;
+                            }
+                        </style>
 
                     </div>
                 </div>
@@ -266,9 +280,248 @@ foreach ($users as $u) {
     </div>
 </div>
 <div class="card" style="height: 360px;">
-  <div style="height:100%;padding:12px;">
-    <canvas id="usersPerMonthChart"></canvas>
-  </div>
+    <div style="height:100%;padding:12px;">
+        <canvas id="usersPerMonthChart"></canvas>
+    </div>
 </div>
 
-                </php>
+<!-- Modale utilisateur -->
+<div id="userModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeUserModal()">&times;</span>
+        <h2 id="modalUserName"></h2>
+        <div class="modal-body">
+            <div class="modal-info-grid">
+                <div class="modal-info-item">
+                    <strong>User ID:</strong>
+                    <span id="modalUserId"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>BlastID:</strong>
+                    <span id="modalBlastId"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Email:</strong>
+                    <span id="modalEmail"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Date d'inscription:</strong>
+                    <span id="modalJoinDate"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Premium:</strong>
+                    <span id="modalPremium"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Grapes:</strong>
+                    <span id="modalGrapes"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Pays:</strong>
+                    <span id="modalCountry"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Ville:</strong>
+                    <span id="modalCity"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Platform:</strong>
+                    <span id="modalPlatform"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: #1a1a1a;
+        margin: 5% auto;
+        padding: 30px;
+        border: 1px solid #333;
+        border-radius: 12px;
+        width: 80%;
+        max-width: 600px;
+        color: #fff;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 20px;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #fff;
+    }
+
+    .modal-body {
+        margin-top: 20px;
+    }
+
+    .modal-info-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .modal-info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px;
+        background: #2a2a2a;
+        border-radius: 8px;
+    }
+
+    .modal-info-item strong {
+        color: #ff6b35;
+    }
+
+    #modalUserName {
+        color: #ff6b35;
+        margin-bottom: 20px;
+    }
+
+    #modalSquadName {
+        color: #ff6b35;
+        margin-bottom: 20px;
+    }
+</style>
+
+<!-- Modale squad -->
+<div id="squadModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeSquadModal()">&times;</span>
+        <h2 id="modalSquadName"></h2>
+        <div class="modal-body">
+            <div class="modal-info-grid">
+                <div class="modal-info-item">
+                    <strong>Squad ID:</strong>
+                    <span id="modalSquadId"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Leader:</strong>
+                    <span id="modalSquadLeader"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Date de création:</strong>
+                    <span id="modalSquadCreated"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>But:</strong>
+                    <span id="modalSquadGoal"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Ville:</strong>
+                    <span id="modalSquadCity"></span>
+                </div>
+                <div class="modal-info-item">
+                    <strong>Jeu:</strong>
+                    <span id="modalSquadGame"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openUserModal(userDataJson) {
+        try {
+            const user = JSON.parse(userDataJson);
+
+            document.getElementById('modalUserName').textContent = user.name || 'N/A';
+            document.getElementById('modalUserId').textContent = user.id || 'N/A';
+            document.getElementById('modalBlastId').textContent = user.blast_id || 'N/A';
+            document.getElementById('modalEmail').textContent = user.email || 'N/A';
+
+            let joinDate = '—';
+            if (user.created_at) {
+                const dt = new Date(user.created_at);
+                joinDate = dt.toLocaleDateString('fr-FR');
+            }
+            document.getElementById('modalJoinDate').textContent = joinDate;
+
+            document.getElementById('modalPremium').textContent = user.premium ? 'Oui' : 'Non';
+            document.getElementById('modalGrapes').textContent = user.grapes || '0';
+            document.getElementById('modalCountry').textContent = user.country || '—';
+            document.getElementById('modalCity').textContent = user.city || '—';
+            document.getElementById('modalPlatform').textContent = user.platform || '—';
+
+            document.getElementById('userModal').style.display = 'block';
+        } catch (e) {
+            console.error('Error opening user modal:', e);
+        }
+    }
+
+    function closeUserModal() {
+        document.getElementById('userModal').style.display = 'none';
+    }
+
+    function openSquadModal(squadDataJson) {
+        try {
+            const squad = JSON.parse(squadDataJson);
+
+            document.getElementById('modalSquadName').textContent = squad.name || 'N/A';
+            document.getElementById('modalSquadId').textContent = squad.id || 'N/A';
+            document.getElementById('modalSquadLeader').textContent = squad.leader_name || squad.leaderId || '—';
+
+            let createdDate = '—';
+            if (squad.createdAt) {
+                const dt = new Date(squad.createdAt);
+                createdDate = dt.toLocaleDateString('fr-FR');
+            }
+            document.getElementById('modalSquadCreated').textContent = createdDate;
+
+            document.getElementById('modalSquadGoal').textContent = squad.goal || '—';
+            document.getElementById('modalSquadCity').textContent = squad.city || '—';
+            document.getElementById('modalSquadGame').textContent = squad.game_description || squad.gameId || '—';
+
+            document.getElementById('squadModal').style.display = 'block';
+        } catch (e) {
+            console.error('Error opening squad modal:', e);
+        }
+    }
+
+    function closeSquadModal() {
+        document.getElementById('squadModal').style.display = 'none';
+    }
+
+    // Fermer les modales si on clique en dehors
+    window.onclick = function(event) {
+        const userModal = document.getElementById('userModal');
+        const squadModal = document.getElementById('squadModal');
+        if (event.target === userModal) {
+            closeUserModal();
+        }
+        if (event.target === squadModal) {
+            closeSquadModal();
+        }
+    }
+</script>
+
+<script>
+    // Initialiser après le chargement de script.js
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.usersData && Array.isArray(window.usersData)) {
+            updateUserCounters(window.usersData);
+            prepareUserChart();
+        }
+    });
+</script>
+
+</php>

@@ -322,43 +322,53 @@ function updateUserCounters(users) {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const sixtyDaysAgo  = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-  // Counts over sliding windows: last 30 days vs previous 30 days
+  // New users in last 30 days
   const newUsersCount = users.filter(u => {
     const d = new Date(u.created_at || u.createdAt);
     return d >= thirtyDaysAgo && d <= now;
   }).length;
 
+  // New users in previous 30 days (for new users trend)
   const prev30Count = users.filter(u => {
     const d = new Date(u.created_at || u.createdAt);
     return d >= sixtyDaysAgo && d < thirtyDaysAgo;
   }).length;
 
-  // Growth: percentage change between the two 30-day windows.
-  // If prev30Count === 0 we display '—' to avoid misleading huge percentages.
-  let growth = null;
-  if (prev30Count > 0) {
-    growth = ((newUsersCount - prev30Count) / prev30Count) * 100;
-  } else if (newUsersCount === 0) {
-    growth = 0; // no change
+  // Total users 30 days ago (for total users growth)
+  const totalThirtyDaysAgo = users.filter(u => {
+    const d = new Date(u.created_at || u.createdAt);
+    return d < thirtyDaysAgo;
+  }).length;
+
+  // Growth for Total Users: compare current total with total 30 days ago
+  let totalGrowth = null;
+  if (totalThirtyDaysAgo > 0) {
+    totalGrowth = ((total - totalThirtyDaysAgo) / totalThirtyDaysAgo) * 100;
+  } else if (total === 0) {
+    totalGrowth = 0;
   }
 
   const growthBadge = document.getElementById('userGrowthBadge');
   if (growthBadge) {
-    if (growth === null) {
+    if (totalGrowth === null) {
       growthBadge.textContent = '—';
       growthBadge.className = 'badge badge-neutral';
     } else {
-      growthBadge.textContent = `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
-      growthBadge.className = 'badge ' + (growth > 0 ? 'badge-positive' : growth < 0 ? 'badge-negative' : 'badge-neutral');
+      growthBadge.textContent = `${totalGrowth >= 0 ? '+' : ''}${totalGrowth.toFixed(1)}%`;
+      growthBadge.className = 'badge ' + (totalGrowth > 0 ? 'badge-positive' : totalGrowth < 0 ? 'badge-negative' : 'badge-neutral');
     }
   }
+  
   const newUsersElt = document.getElementById('newUsersCount');
   if (newUsersElt) newUsersElt.textContent = newUsersCount;
 
-  // For trend badge use the same sliding-window logic
+  // Trend for New Users: compare last 30 days with previous 30 days
   let trendVariation = null;
-  if (prev30Count > 0) trendVariation = ((newUsersCount - prev30Count) / prev30Count) * 100;
-  else if (newUsersCount === 0) trendVariation = 0;
+  if (prev30Count > 0) {
+    trendVariation = ((newUsersCount - prev30Count) / prev30Count) * 100;
+  } else if (newUsersCount === 0) {
+    trendVariation = 0;
+  }
 
   const trendBadge = document.getElementById('userGrowthTrendBadge');
   if (trendBadge) {
